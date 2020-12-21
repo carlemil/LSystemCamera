@@ -24,6 +24,7 @@ import java.util.concurrent.Executors
 typealias LumaListener = (luma: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
+    private val CAMERA_IMAGE_SIZE = 16
     private var imageCapture: ImageCapture? = null
 
     private lateinit var outputDirectory: File
@@ -37,7 +38,7 @@ class MainActivity : AppCompatActivity() {
 
         // Request camera permissions
         if (allPermissionsGranted()) {
-            startCamera()
+            startCamera(CAMERA_IMAGE_SIZE)
         } else {
             ActivityCompat.requestPermissions(
                 this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
@@ -88,7 +89,7 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.P)
     @androidx.camera.core.ExperimentalGetImage
-    private fun startCamera() {
+    private fun startCamera(size: Int) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener(Runnable {
@@ -106,19 +107,24 @@ class MainActivity : AppCompatActivity() {
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             val imageAnalysis = ImageAnalysis.Builder()
-                .setTargetResolution(Size(1280, 720))
+                .setTargetResolution(Size(size, size))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
             imageAnalysis.setAnalyzer(executor, { image ->
                 val rotationDegrees = image.imageInfo.rotationDegrees
 
+                var luminence: Array<ByteArray> = Array(size) { ByteArray(size) }
+
+
                 val plane = image.image?.planes?.get(0)
-                for (i in 0..12) {
-                    print(" " + plane?.buffer?.get(i))
+                for (y in 0 until size) {
+                    for (x in 0 until size) {
+                        luminence[x][y] = plane?.buffer?.get(x + y * size) ?: Byte.MIN_VALUE
+                    }
                 }
-                println("   pixelStride: ${plane?.pixelStride} rowStride:${plane?.rowStride}")
-                // insert your code here.
+                //println("   pixelStride: ${plane?.pixelStride} rowStride:${plane?.rowStride}")
+                // draw lumi to bitmap and show to see what we got
 
                 image.close()
             })
@@ -162,7 +168,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
-                startCamera()
+                startCamera(CAMERA_IMAGE_SIZE)
             } else {
                 Toast.makeText(
                     this,
