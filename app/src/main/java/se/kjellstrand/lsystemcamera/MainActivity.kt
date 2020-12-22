@@ -2,6 +2,7 @@ package se.kjellstrand.lsystemcamera
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,17 +22,19 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+
 typealias LumaListener = (luma: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
-    private val CAMERA_IMAGE_SIZE = 16
+    private val CAMERA_IMAGE_SIZE = 200
     private var imageCapture: ImageCapture? = null
 
     private lateinit var outputDirectory: File
     private lateinit var cameraExecutor: ExecutorService
 
-    private val executor = Executors.newSingleThreadExecutor()
+    private val analyzerExecutor = Executors.newSingleThreadExecutor()
 
+    @androidx.camera.core.ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -111,20 +114,38 @@ class MainActivity : AppCompatActivity() {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            imageAnalysis.setAnalyzer(executor, { image ->
+            imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
                 val rotationDegrees = image.imageInfo.rotationDegrees
 
-                var luminence: Array<ByteArray> = Array(size) { ByteArray(size) }
+                //image.setCropRect(Rect(0,0,size,size))
 
+                val luminance: Array<ByteArray> = Array(image.height) { ByteArray(image.width) }
 
                 val plane = image.image?.planes?.get(0)
-                for (y in 0 until size) {
-                    for (x in 0 until size) {
-                        luminence[x][y] = plane?.buffer?.get(x + y * size) ?: Byte.MIN_VALUE
+                for (y in 0 until image.height) {
+                    for (x in 0 until image.width) {
+                        val byte = plane?.buffer?.get(x + y * image.width) ?: Byte.MIN_VALUE
+                        luminance[y][x] = byte
                     }
                 }
-                //println("   pixelStride: ${plane?.pixelStride} rowStride:${plane?.rowStride}")
-                // draw lumi to bitmap and show to see what we got
+
+                val bitmap = Bitmap.createBitmap(image.height, image.width, Bitmap.Config.ARGB_8888)
+
+                var min = Int.MAX_VALUE
+                var max = Int.MIN_VALUE
+                for (y in 0 until image.height) {
+                    for (x in 0 until image.width) {
+                        val color = getColorFromLuminanceValue(luminance[y][x])
+                        bitmap.setPixel(y, x, color)
+                        if (min > color) min = color
+                        if (max < color) max = color
+
+                    }
+                }
+                println("min: $min  max: $max")
+                runOnUiThread {
+                    imageView.setImageBitmap(bitmap)
+                }
 
                 image.close()
             })
@@ -144,6 +165,16 @@ class MainActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    private fun getColorFromLuminanceValue(byte: Byte): Int {
+        val i = getByteValueFromLuminanceValue(byte).toInt()
+        return ((i and 0xFF) + ((i shl 8) and 0xFF00) + ((i shl 16) and 0xFF0000) + 0xFF000000).toInt()
+    }
+
+    private fun getByteValueFromLuminanceValue(luminance: Byte): Byte {
+        return (((if (luminance < 0) 255 + luminance.toInt() else luminance.toInt()) - 16) * 1.1636)
+            .toInt().toByte()
+    }
+
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
@@ -161,6 +192,7 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
+    @androidx.camera.core.ExperimentalGetImage
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
