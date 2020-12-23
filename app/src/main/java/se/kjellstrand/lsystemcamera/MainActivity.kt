@@ -3,6 +3,7 @@ package se.kjellstrand.lsystemcamera
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -26,7 +27,7 @@ import java.util.concurrent.Executors
 typealias LumaListener = (luma: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
-    private val CAMERA_IMAGE_SIZE = 200
+    private val CAMERA_IMAGE_SIZE = 100
     private var imageCapture: ImageCapture? = null
 
     private lateinit var outputDirectory: File
@@ -117,32 +118,32 @@ class MainActivity : AppCompatActivity() {
             imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
                 val rotationDegrees = image.imageInfo.rotationDegrees
 
-                //image.setCropRect(Rect(0,0,size,size))
+                image.setCropRect(Rect(0,0,size,size))
 
-                val luminance: Array<ByteArray> = Array(image.height) { ByteArray(image.width) }
+                val luminance: Array<ByteArray> = Array(image.width) { ByteArray(image.height) }
 
                 val plane = image.image?.planes?.get(0)
                 for (y in 0 until image.height) {
                     for (x in 0 until image.width) {
                         val byte = plane?.buffer?.get(x + y * image.width) ?: Byte.MIN_VALUE
-                        luminance[y][x] = byte
+                        luminance[x][y] = byte
                     }
                 }
 
-                val bitmap = Bitmap.createBitmap(image.height, image.width, Bitmap.Config.ARGB_8888)
+                val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
 
                 var min = Int.MAX_VALUE
                 var max = Int.MIN_VALUE
                 for (y in 0 until image.height) {
                     for (x in 0 until image.width) {
-                        val color = getColorFromLuminanceValue(luminance[y][x])
-                        bitmap.setPixel(y, x, color)
+                        val color = getColorFromLuminanceValue(luminance[x][y])
+                        bitmap.setPixel(x, y, color)
                         if (min > color) min = color
                         if (max < color) max = color
 
                     }
                 }
-                println("min: $min  max: $max")
+                //println("min: $min  max: $max")
                 runOnUiThread {
                     imageView.setImageBitmap(bitmap)
                 }
