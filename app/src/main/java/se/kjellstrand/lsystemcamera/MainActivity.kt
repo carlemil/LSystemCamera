@@ -1,6 +1,7 @@
 package se.kjellstrand.lsystemcamera
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Rect
@@ -16,15 +17,16 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
+import se.kjellstrand.lsystem.LSystemGenerator
+import se.kjellstrand.lsystem.model.LSystem
+import se.kjellstrand.variablewidthline.LinePoint
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
-
-typealias LumaListener = (luma: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
     private val CAMERA_IMAGE_SIZE = 100
@@ -98,72 +100,90 @@ class MainActivity : AppCompatActivity() {
 
         cameraProviderFuture.addListener(Runnable {
             // Used to bind the lifecycle of cameras to the lifecycle owner
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-            // Preview
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(viewFinder.createSurfaceProvider())
-            }
-
-            imageCapture = ImageCapture.Builder().build()
-
-            // Select back camera as a default
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setTargetResolution(Size(size, size))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-
-            imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
-                val rotationDegrees = image.imageInfo.rotationDegrees
-
-                image.setCropRect(Rect(0,0,size,size))
-
-                val luminance: Array<ByteArray> = Array(image.width) { ByteArray(image.height) }
-
-                val plane = image.image?.planes?.get(0)
-                for (y in 0 until image.height) {
-                    for (x in 0 until image.width) {
-                        val byte = plane?.buffer?.get(x + y * image.width) ?: Byte.MIN_VALUE
-                        luminance[x][y] = byte
-                    }
-                }
-
-                val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-
-                var min = Int.MAX_VALUE
-                var max = Int.MIN_VALUE
-                for (y in 0 until image.height) {
-                    for (x in 0 until image.width) {
-                        val color = getColorFromLuminanceValue(luminance[x][y])
-                        bitmap.setPixel(x, y, color)
-                        if (min > color) min = color
-                        if (max < color) max = color
-
-                    }
-                }
-                //println("min: $min  max: $max")
-                runOnUiThread {
-                    imageView.setImageBitmap(bitmap)
-                }
-
-                image.close()
-            })
-
-            try {
-                // Unbind use cases before rebinding
-                cameraProvider.unbindAll()
-
-                // Bind use cases to camera
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-                cameraProvider.bindToLifecycle(this, cameraSelector, imageAnalysis, preview)
-
-            } catch (exc: Exception) {
-                Log.e(TAG, "Use case binding failed", exc)
-            }
+            handleCamera(cameraProviderFuture, size)
 
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun handleCamera(
+        cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
+        size: Int
+    ) {
+        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+        // Preview
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(viewFinder.createSurfaceProvider())
+        }
+
+        imageCapture = ImageCapture.Builder().build()
+
+        // Select back camera as a default
+        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+        val imageAnalysis = ImageAnalysis.Builder()
+            .setTargetResolution(Size(size, size))
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+
+        imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
+            analyzeImage(image, size)
+        })
+
+        try {
+            // Unbind use cases before rebinding
+            cameraProvider.unbindAll()
+
+            // Bind use cases to camera
+            cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+            cameraProvider.bindToLifecycle(this, cameraSelector, imageAnalysis, preview)
+
+        } catch (exc: Exception) {
+            Log.e(TAG, "Use case binding failed", exc)
+        }
+    }
+
+    @SuppressLint("UnsafeExperimentalUsageError")
+    private fun analyzeImage(image: ImageProxy, size: Int) {
+        val rotationDegrees = image.imageInfo.rotationDegrees
+
+        image.setCropRect(Rect(0, 0, size, size))
+
+        val luminance: Array<ByteArray> = Array(image.width) { ByteArray(image.height) }
+
+        val plane = image.image?.planes?.get(0)
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                val byte = plane?.buffer?.get(x + y * image.width) ?: Byte.MIN_VALUE
+                luminance[x][y] = byte
+            }
+        }
+
+        val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+
+        var min = Int.MAX_VALUE
+        var max = Int.MIN_VALUE
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                val color = getColorFromLuminanceValue(luminance[x][y])
+                bitmap.setPixel(x, y, color)
+                if (min > color) min = color
+                if (max < color) max = color
+
+            }
+        }
+        LSystem.getByName("Hilbert")?.let { lSystem ->
+            val line = LSystemGenerator.generatePolygon(lSystem, 3)
+            val vwLine = line.map { linePoint -> LinePoint(linePoint.x, linePoint.y, 1.0) }
+            println("vwLine: ${vwLine.size}")
+        }
+
+
+        runOnUiThread {
+            imageView.setImageBitmap(bitmap)
+        }
+
+        image.close()
     }
 
     private fun getColorFromLuminanceValue(byte: Byte): Int {
