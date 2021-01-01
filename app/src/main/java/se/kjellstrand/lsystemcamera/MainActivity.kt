@@ -3,8 +3,7 @@ package se.kjellstrand.lsystemcamera
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Rect
+import android.graphics.*
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -20,22 +19,27 @@ import androidx.core.content.ContextCompat
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
 import se.kjellstrand.lsystem.LSystemGenerator
+import se.kjellstrand.lsystem.LSystemRenderer
 import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.variablewidthline.LinePoint
+import se.kjellstrand.variablewidthline.buildHullFromPolygon
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+
 class MainActivity : AppCompatActivity() {
-    private val CAMERA_IMAGE_SIZE = 100
+    private val CAMERA_IMAGE_SIZE = 500
     private var imageCapture: ImageCapture? = null
 
     private lateinit var outputDirectory: File
     private lateinit var cameraExecutor: ExecutorService
 
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
+
+    private var bitmap: Bitmap? = null
 
     @androidx.camera.core.ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -151,6 +155,10 @@ class MainActivity : AppCompatActivity() {
 
         val luminance: Array<ByteArray> = Array(image.width) { ByteArray(image.height) }
 
+        if (bitmap == null) {
+            bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+        }
+
         val plane = image.image?.planes?.get(0)
         for (y in 0 until image.height) {
             for (x in 0 until image.width) {
@@ -159,23 +167,87 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-
-        var min = Int.MAX_VALUE
-        var max = Int.MIN_VALUE
-        for (y in 0 until image.height) {
-            for (x in 0 until image.width) {
-                val color = getColorFromLuminanceValue(luminance[x][y])
-                bitmap.setPixel(x, y, color)
-                if (min > color) min = color
-                if (max < color) max = color
-
+//        var min = Int.MAX_VALUE
+//        var max = Int.MIN_VALUE
+//        for (y in 0 until image.height) {
+//            for (x in 0 until image.width) {
+//                val color = getColorFromLuminanceValue(luminance[x][y])
+//                bitmap.setPixel(x, y, color)
+//                if (min > color) min = color
+//                if (max < color) max = color
+//
+//            }
+//        }
+        val lsystem = LSystem.getByName("Hilbert")
+        lsystem?.let { lSystem ->
+            val iteration = 2
+            val line = LSystemGenerator.generatePolygon(lSystem, iteration)
+            val vWLine = line.map { linePoint ->
+                LinePoint(linePoint.x, linePoint.y, 1.0)
             }
-        }
-        LSystem.getByName("Hilbert")?.let { lSystem ->
-            val line = LSystemGenerator.generatePolygon(lSystem, 3)
-            val vwLine = line.map { linePoint -> LinePoint(linePoint.x, linePoint.y, 1.0) }
-            println("vwLine: ${vwLine.size}")
+
+            val (minWidth, maxWidth) = LSystemRenderer.getRecommendedMinAndMaxWidth(
+                size,
+                iteration,
+                lSystem
+            )
+
+            if (minWidth < 0.5 || minWidth < size / 5000) {
+                //return
+            }
+            LSystemRenderer.adjustLineWidthAccordingToImage(
+                vWLine,
+                luminance,
+                size,
+                minWidth,
+                maxWidth
+            )
+            val scaledVWLine = vWLine.map { linePoint ->
+                // TODO stop making new LinePoints
+                LinePoint(linePoint.x * image.width, linePoint.y * image.height, 1.0)
+            }
+
+            val hull = buildHullFromPolygon(scaledVWLine)
+
+            bitmap?.let { bitmap ->
+                val c = Canvas(bitmap)
+                val bgPaint = Paint()
+                bgPaint.color = Color.LTGRAY
+                c.drawRect(0F, 0F, c.width.toFloat(), c.height.toFloat(), bgPaint)
+                val paint = Paint()
+                paint.color = Color.RED
+                paint.style = Paint.Style.STROKE
+
+
+                val polyPath = Path()
+                //polyPath.fillType = Path.FillType.WINDING
+                polyPath.moveTo(hull[0].x.toFloat(), hull[0].y.toFloat())
+                hull.forEach { p ->
+                    polyPath.lineTo(p.x.toFloat(), p.y.toFloat())
+                }
+                polyPath.lineTo(hull[0].x.toFloat(), hull[0].y.toFloat())
+                polyPath.close()
+                c.drawPath(polyPath, paint)
+
+                val path = Path()
+                path.moveTo(10f, 10f)
+                path.lineTo(10f, 10f)
+                path.lineTo(100f, 10f)
+                path.lineTo(10f, 100f)
+                path.close()
+                c.drawPath(path, paint)
+
+//                var p0 = hull[0]
+//                hull.forEach { p1 ->
+//                    c.drawLine(
+//                        p0.x.toFloat(),
+//                        p0.y.toFloat(),
+//                        p1.x.toFloat(),
+//                        p1.y.toFloat(), p
+//                    )
+//                    p0 = p1
+//                }
+            }
         }
 
 
