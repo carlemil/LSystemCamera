@@ -32,7 +32,7 @@ import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     private val CAMERA_IMAGE_SIZE = 200
-    private val iteration = 3
+    private val iteration = 5
 
     private var imageCapture: ImageCapture? = null
 
@@ -174,25 +174,24 @@ class MainActivity : AppCompatActivity() {
             val lsystem = LSystem.getByName("Hilbert")
             lsystem?.let { lSystem ->
                 val line = LSystemGenerator.generatePolygon(lSystem, iteration)
-                val vWLine = line.map { p -> Triple(p.x.toFloat(), p.y.toFloat(), 1.0f) }
+                val vWLine = line.map { p -> Pair(p.x.toFloat(), p.y.toFloat()) }
                     // Get rid of almost duplicated points (double is a bit inexact,
                     // so points that are "the same" are not == )
                     .distinct()
-                    .map { (a, b, c) -> LinePoint(a.toDouble(), b.toDouble(), c.toDouble()) }
+                    .map { (a, b) -> LinePoint(a.toDouble(), b.toDouble(), 1.0) }
 
                 val (minWidth, maxWidth) = LSystemRenderer.getRecommendedMinAndMaxWidth(
-                    size, iteration, lSystem
+                    bitmap.width, iteration, lSystem
                 )
 
                 if (minWidth < 0.5 || minWidth < size / 5000) {
                     //return
                 }
                 LSystemRenderer.adjustLineWidthAccordingToImage(
-                    vWLine,
-                    luminance,
-                    size,
-                    minWidth,
-                    maxWidth
+                    line = vWLine,
+                    luminanceData = luminance,
+                    minWidth = minWidth,
+                    maxWidth = maxWidth
                 )
 
                 val scaledVWLine = vWLine.map { p ->
@@ -236,6 +235,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         image.close()
+    }
+
+
+    fun adjustLineWidthAccordingToImage(
+        line: List<LinePoint>,
+        luminanceData: Array<ByteArray>,
+        outputImageSize: Double,
+        minWidth: Double,
+        maxWidth: Double
+    ) {
+        val xScale = luminanceData.size-1
+        val yScale = luminanceData[0].size-1
+        for (p in line) {
+            // Use the inverted brightness as width of the line we drawSpline.
+            val lum = luminanceData[(p.x * xScale).toInt()][(p.y * yScale).toInt()]
+            p.w = minWidth + ((lum + 127) / 255.0) * (maxWidth - minWidth)
+        }
     }
 
     private fun getColorFromLuminanceValue(byte: Byte): Int {
