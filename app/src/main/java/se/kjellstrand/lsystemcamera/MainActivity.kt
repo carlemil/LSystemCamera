@@ -31,7 +31,9 @@ import java.util.concurrent.Executors
 
 
 class MainActivity : AppCompatActivity() {
-    private val CAMERA_IMAGE_SIZE = 500
+    private val CAMERA_IMAGE_SIZE = 200
+    private val iteration = 3
+
     private var imageCapture: ImageCapture? = null
 
     private lateinit var outputDirectory: File
@@ -156,68 +158,57 @@ class MainActivity : AppCompatActivity() {
         val luminance: Array<ByteArray> = Array(image.width) { ByteArray(image.height) }
 
         if (bitmap == null) {
-            bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+            bitmap = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
         }
 
-        val plane = image.image?.planes?.get(0)
-        for (y in 0 until image.height) {
-            for (x in 0 until image.width) {
-                val byte = plane?.buffer?.get(x + y * image.width) ?: Byte.MIN_VALUE
-                luminance[x][y] = byte
-            }
-        }
+        bitmap?.let { bitmap ->
 
-//        var min = Int.MAX_VALUE
-//        var max = Int.MIN_VALUE
-//        for (y in 0 until image.height) {
-//            for (x in 0 until image.width) {
-//                val color = getColorFromLuminanceValue(luminance[x][y])
-//                bitmap.setPixel(x, y, color)
-//                if (min > color) min = color
-//                if (max < color) max = color
-//
-//            }
-//        }
-        val lsystem = LSystem.getByName("Hilbert")
-        lsystem?.let { lSystem ->
-            val iteration = 2
-            val line = LSystemGenerator.generatePolygon(lSystem, iteration)
-            val vWLine = line.map { linePoint ->
-                LinePoint(linePoint.x, linePoint.y, 1.0)
+            val plane = image.image?.planes?.get(0)
+            for (y in 0 until image.height) {
+                for (x in 0 until image.width) {
+                    val byte = plane?.buffer?.get(x + y * image.width) ?: Byte.MIN_VALUE
+                    luminance[x][y] = byte
+                }
             }
 
-            val (minWidth, maxWidth) = LSystemRenderer.getRecommendedMinAndMaxWidth(
-                size,
-                iteration,
-                lSystem
-            )
+            val lsystem = LSystem.getByName("Hilbert")
+            lsystem?.let { lSystem ->
+                val line = LSystemGenerator.generatePolygon(lSystem, iteration)
+                val vWLine = line.map { p -> Triple(p.x.toFloat(), p.y.toFloat(), 1.0f) }
+                    // Get rid of almost duplicated points (double is a bit inexact,
+                    // so points that are "the same" are not == )
+                    .distinct()
+                    .map { (a, b, c) -> LinePoint(a.toDouble(), b.toDouble(), c.toDouble()) }
 
-            if (minWidth < 0.5 || minWidth < size / 5000) {
-                //return
-            }
-            LSystemRenderer.adjustLineWidthAccordingToImage(
-                vWLine,
-                luminance,
-                size,
-                minWidth,
-                maxWidth
-            )
-            val scaledVWLine = vWLine.map { linePoint ->
-                // TODO stop making new LinePoints
-                LinePoint(linePoint.x * image.width, linePoint.y * image.height, 1.0)
-            }
+                val (minWidth, maxWidth) = LSystemRenderer.getRecommendedMinAndMaxWidth(
+                    size, iteration, lSystem
+                )
 
-            val hull = buildHullFromPolygon(scaledVWLine)
+                if (minWidth < 0.5 || minWidth < size / 5000) {
+                    //return
+                }
+                LSystemRenderer.adjustLineWidthAccordingToImage(
+                    vWLine,
+                    luminance,
+                    size,
+                    minWidth,
+                    maxWidth
+                )
 
-            bitmap?.let { bitmap ->
+                val scaledVWLine = vWLine.map { p ->
+                    // TODO stop making new LinePoints
+                    LinePoint(p.x * bitmap.width, p.y * bitmap.height, p.w)
+                }
+
+                val hull = buildHullFromPolygon(scaledVWLine)
+
                 val c = Canvas(bitmap)
                 val bgPaint = Paint()
                 bgPaint.color = Color.LTGRAY
                 c.drawRect(0F, 0F, c.width.toFloat(), c.height.toFloat(), bgPaint)
                 val paint = Paint()
                 paint.color = Color.RED
-                paint.style = Paint.Style.STROKE
-
+                paint.style = Paint.Style.FILL_AND_STROKE
 
                 val polyPath = Path()
                 //polyPath.fillType = Path.FillType.WINDING
@@ -229,21 +220,10 @@ class MainActivity : AppCompatActivity() {
                 polyPath.close()
                 c.drawPath(polyPath, paint)
 
-                val path = Path()
-                path.moveTo(10f, 10f)
-                path.lineTo(10f, 10f)
-                path.lineTo(100f, 10f)
-                path.lineTo(10f, 100f)
-                path.close()
-                c.drawPath(path, paint)
-
 //                var p0 = hull[0]
 //                hull.forEach { p1 ->
 //                    c.drawLine(
-//                        p0.x.toFloat(),
-//                        p0.y.toFloat(),
-//                        p1.x.toFloat(),
-//                        p1.y.toFloat(), p
+//                        p0.x.toFloat(), p0.y.toFloat(), p1.x.toFloat(), p1.y.toFloat(), paint
 //                    )
 //                    p0 = p1
 //                }
