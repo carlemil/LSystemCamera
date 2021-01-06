@@ -18,13 +18,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
+import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.LSystemGenerator.generatePolygon
-import se.kjellstrand.lsystem.LSystemRenderer
-import se.kjellstrand.lsystem.Point
 import se.kjellstrand.lsystem.model.LSystem
-import se.kjellstrand.variablewidthline.LinePoint
 import se.kjellstrand.variablewidthline.buildHullFromPolygon
 import java.io.File
+import java.nio.channels.FileLock
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
@@ -41,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
 
     private lateinit var lSystem: LSystem
-    private lateinit var vWLine: List<LinePoint>
+    private lateinit var line: List<Triple<Float, Float, Float>>
 
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
 
@@ -55,13 +54,9 @@ class MainActivity : AppCompatActivity() {
 
         lSystem = LSystem.getByName("Hilbert")!!
 
-        val line: List<Point> = generatePolygon(lSystem, iteration)
-
-        vWLine = line.map { p -> Pair(p.x.toFloat(), p.y.toFloat()) }
-            // Get rid of almost duplicated points (double is a bit inexact,
-            // so points that are "the same" are not == )
-            .distinct()
-            .map { (a, b) -> LinePoint(a.toDouble(), b.toDouble(), 1.0) }
+        line = generatePolygon(lSystem, iteration).map { p ->
+            Triple(p.first, p.second, 1F)
+        }.distinct()
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -188,23 +183,23 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val (minWidth, maxWidth) = LSystemRenderer.getRecommendedMinAndMaxWidth(
+            val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
                 bitmap.width, iteration, lSystem
             )
 
             if (minWidth < 0.5 || minWidth < size / 5000) {
                 //return
             }
-            LSystemRenderer.adjustLineWidthAccordingToImage(
-                line = vWLine,
+            val vWLine = LSystemGenerator.setLineWidthAccordingToImage(
+                line = line,
                 luminanceData = luminance,
                 minWidth = minWidth,
                 maxWidth = maxWidth
             )
 
             val scaledVWLine = vWLine.map { p ->
-                // TODO stop making new LinePoints
-                LinePoint(p.x * bitmap.width, p.y * bitmap.height, p.w)
+                // TODO stop making new Triple
+                Triple(p.first * bitmap.width, p.second * bitmap.height, p.third)
             }
 
             val hull = buildHullFromPolygon(scaledVWLine)
@@ -219,11 +214,11 @@ class MainActivity : AppCompatActivity() {
 
             val polyPath = Path()
             //polyPath.fillType = Path.FillType.WINDING
-            polyPath.moveTo(hull[0].x.toFloat(), hull[0].y.toFloat())
+            polyPath.moveTo(hull[0].first, hull[0].second)
             hull.forEach { p ->
-                polyPath.lineTo(p.x.toFloat(), p.y.toFloat())
+                polyPath.lineTo(p.first, p.second)
             }
-            polyPath.lineTo(hull[0].x.toFloat(), hull[0].y.toFloat())
+            polyPath.lineTo(hull[0].first, hull[0].second)
             polyPath.close()
             c.drawPath(polyPath, paint)
 
@@ -244,21 +239,20 @@ class MainActivity : AppCompatActivity() {
         image.close()
     }
 
-
     fun adjustLineWidthAccordingToImage(
-        line: List<LinePoint>,
+        line: List<Triple<Float, Float, Float>>,
         luminanceData: Array<ByteArray>,
         outputImageSize: Double,
         minWidth: Double,
         maxWidth: Double
     ) {
-        val xScale = luminanceData.size - 1
-        val yScale = luminanceData[0].size - 1
-        for (p in line) {
-            // Use the inverted brightness as width of the line we drawSpline.
-            val lum = luminanceData[(p.x * xScale).toInt()][(p.y * yScale).toInt()]
-            p.w = minWidth + ((lum + 127) / 255.0) * (maxWidth - minWidth)
-        }
+//        val xScale = luminanceData.size - 1
+//        val yScale = luminanceData[0].size - 1
+//        for (p in line) {
+//            // Use the inverted brightness as width of the line we drawSpline.
+//            val lum = luminanceData[(p.x * xScale).toInt()][(p.y * yScale).toInt()]
+//            p.w = minWidth + ((lum + 127) / 255.0) * (maxWidth - minWidth)
+//        }
     }
 
     private fun getColorFromLuminanceValue(byte: Byte): Int {

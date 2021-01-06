@@ -35,7 +35,7 @@ android {
 dependencies {
     def camerax_version = "1.0.0-beta07"
 
-    implementation "se.kjellstrand:lsystem:1.0-SNAPSHOT"
+    implementation "se.kjellstrand:lsystem:1.1-SNAPSHOT"
     //implementation "se.kjellstrand:vwcurve:1.1-SNAPSHOT"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
