@@ -128,10 +128,14 @@ class MainActivity : AppCompatActivity() {
 
         // Preview
         val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(viewFinder.createSurfaceProvider())
+            //it.setSurfaceProvider(viewFinder.createSurfaceProvider())
+            it?.setSurfaceProvider(viewFinder.surfaceProvider)
         }
 
-        imageCapture = ImageCapture.Builder().build()
+        imageCapture =  ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            //.setTargetAspectRatio(screenAspectRatio)
+            .build()
 
         // Select back camera as a default
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -162,7 +166,6 @@ class MainActivity : AppCompatActivity() {
     private fun analyzeImage(image: ImageProxy, size: Int) {
         val rotationDegrees = image.imageInfo.rotationDegrees
         println("analyzeImage " + System.currentTimeMillis())
-        //image.setCropRect(Rect(0, 0, size, size))
 
         if (luminance.size != image.width || luminance[0].size != image.height) {
             luminance = Array(image.width) { ByteArray(image.height) }
