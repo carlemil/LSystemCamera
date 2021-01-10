@@ -177,7 +177,7 @@ class MainActivity : AppCompatActivity() {
             for (y in 0 until image.height) {
                 for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
                     val byte = plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE
-                    luminance[x][y] = (128 - byte).toByte()
+                    luminance[x][y] = (127 - byte).toByte()
                 }
             }
 
@@ -195,15 +195,15 @@ class MainActivity : AppCompatActivity() {
                 maxWidth = maxWidth
             )
 
-            val scaledVWLine = vWLine.map { p ->
+            val outputSideBuffer = bitmap.width / 50
+            val adjustedLine = LSystemGenerator.adjustToOutputRectangle(bitmap.width, outputSideBuffer, vWLine)
+
+            val scaledVWLine = adjustedLine.map { p ->
                 // TODO stop making new Triple
                 Triple(p.first * bitmap.width, p.second * bitmap.height, p.third)
             }
 
-            val outputSideBuffer = bitmap.width / 50
-            val adjustedLine = LSystemGenerator.adjustToOutputRectangle(bitmap.width, outputSideBuffer, scaledVWLine)
-
-            val hull = buildHullFromPolygon(adjustedLine)
+            val hull = buildHullFromPolygon(scaledVWLine)
 
             val c = Canvas(bitmap)
             val bgPaint = Paint()
@@ -219,7 +219,6 @@ class MainActivity : AppCompatActivity() {
             hull.forEach { p ->
                 polyPath.lineTo(p.first, p.second)
             }
-            polyPath.lineTo(hull[0].first, hull[0].second)
             polyPath.close()
             c.drawPath(polyPath, paint)
         }
