@@ -23,7 +23,6 @@ import se.kjellstrand.lsystem.LSystemGenerator.generatePolygon
 import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.variablewidthline.buildHullFromPolygon
 import java.io.File
-import java.nio.channels.FileLock
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
@@ -174,11 +173,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         bitmap?.let { bitmap ->
-
             val plane = image.image?.planes?.get(0)
             for (y in 0 until image.height) {
-                for (x in 0 until image.width) {
-                    val byte = plane?.buffer?.get(x + y * image.width) ?: Byte.MIN_VALUE
+                for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
+                    val byte = plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE
                     luminance[x][y] = (128 - byte).toByte()
                 }
             }
@@ -202,7 +200,10 @@ class MainActivity : AppCompatActivity() {
                 Triple(p.first * bitmap.width, p.second * bitmap.height, p.third)
             }
 
-            val hull = buildHullFromPolygon(scaledVWLine)
+            val outputSideBuffer = bitmap.width / 50
+            val adjustedLine = LSystemGenerator.adjustToOutputRectangle(bitmap.width, outputSideBuffer, scaledVWLine)
+
+            val hull = buildHullFromPolygon(adjustedLine)
 
             val c = Canvas(bitmap)
             val bgPaint = Paint()
@@ -221,16 +222,7 @@ class MainActivity : AppCompatActivity() {
             polyPath.lineTo(hull[0].first, hull[0].second)
             polyPath.close()
             c.drawPath(polyPath, paint)
-
-//                var p0 = hull[0]
-//                hull.forEach { p1 ->
-//                    c.drawLine(
-//                        p0.x.toFloat(), p0.y.toFloat(), p1.x.toFloat(), p1.y.toFloat(), paint
-//                    )
-//                    p0 = p1
-//                }
         }
-
 
         runOnUiThread {
             imageView.setImageBitmap(bitmap)
