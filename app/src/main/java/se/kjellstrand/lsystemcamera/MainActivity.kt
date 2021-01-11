@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.view.Surface
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -132,7 +133,7 @@ class MainActivity : AppCompatActivity() {
             it?.setSurfaceProvider(viewFinder.surfaceProvider)
         }
 
-        imageCapture =  ImageCapture.Builder()
+        imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             //.setTargetAspectRatio(screenAspectRatio)
             .build()
@@ -142,6 +143,7 @@ class MainActivity : AppCompatActivity() {
 
         val imageAnalysis = ImageAnalysis.Builder()
             .setTargetResolution(Size(size, size))
+            .setTargetRotation(Surface.ROTATION_0) // TODO Figure out why this is broken and do not work.
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
 
@@ -164,11 +166,10 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("UnsafeExperimentalUsageError")
     private fun analyzeImage(image: ImageProxy, size: Int) {
-        val rotationDegrees = image.imageInfo.rotationDegrees
-        println("analyzeImage " + System.currentTimeMillis())
+        // val rotationDegrees = image.imageInfo.rotationDegrees
 
         if (luminance.size != image.width || luminance[0].size != image.height) {
-            luminance = Array(image.width) { ByteArray(image.height) }
+            luminance = Array(image.height) { ByteArray(image.width) }
         }
 
         if (bitmap == null) {
@@ -180,7 +181,7 @@ class MainActivity : AppCompatActivity() {
             for (y in 0 until image.height) {
                 for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
                     val byte = plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE
-                    luminance[x][y] = (127 - byte).toByte()
+                    luminance[image.height - y - 1][x] = (127 - byte).toByte()
                 }
             }
 
@@ -199,7 +200,8 @@ class MainActivity : AppCompatActivity() {
             )
 
             val outputSideBuffer = bitmap.width / 50
-            val adjustedLine = LSystemGenerator.adjustToOutputRectangle(bitmap.width, outputSideBuffer, vWLine)
+            val adjustedLine =
+                LSystemGenerator.adjustToOutputRectangle(bitmap.width, outputSideBuffer, vWLine)
 
             val scaledVWLine = adjustedLine.map { p ->
                 // TODO stop making new Triple
@@ -231,32 +233,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         image.close()
-    }
-
-    fun adjustLineWidthAccordingToImage(
-        line: List<Triple<Float, Float, Float>>,
-        luminanceData: Array<ByteArray>,
-        outputImageSize: Double,
-        minWidth: Double,
-        maxWidth: Double
-    ) {
-//        val xScale = luminanceData.size - 1
-//        val yScale = luminanceData[0].size - 1
-//        for (p in line) {
-//            // Use the inverted brightness as width of the line we drawSpline.
-//            val lum = luminanceData[(p.x * xScale).toInt()][(p.y * yScale).toInt()]
-//            p.w = minWidth + ((lum + 127) / 255.0) * (maxWidth - minWidth)
-//        }
-    }
-
-    private fun getColorFromLuminanceValue(byte: Byte): Int {
-        val i = getByteValueFromLuminanceValue(byte).toInt()
-        return ((i and 0xFF) + ((i shl 8) and 0xFF00) + ((i shl 16) and 0xFF0000) + 0xFF000000).toInt()
-    }
-
-    private fun getByteValueFromLuminanceValue(luminance: Byte): Byte {
-        return (((if (luminance < 0) 255 + luminance.toInt() else luminance.toInt()) - 16) * 1.1636)
-            .toInt().toByte()
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
