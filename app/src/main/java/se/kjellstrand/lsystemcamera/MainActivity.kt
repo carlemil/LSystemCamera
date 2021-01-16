@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
 
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
 
-    private var luminance: Array<ByteArray> = Array(0) { ByteArray(0) }
+    private var luminance: Array<FloatArray> = Array(0) { FloatArray(0) }
     private var bitmap: Bitmap? = null
 
     @androidx.camera.core.ExperimentalGetImage
@@ -169,7 +169,7 @@ class MainActivity : AppCompatActivity() {
         // val rotationDegrees = image.imageInfo.rotationDegrees
 
         if (luminance.size != image.width || luminance[0].size != image.height) {
-            luminance = Array(image.height) { ByteArray(image.width) }
+            luminance = Array(image.height) { FloatArray(image.width) }
         }
 
         if (bitmap == null) {
@@ -177,13 +177,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         bitmap?.let { bitmap ->
+
+            var mi = 0f
+            var ma = 0f
+
             val plane = image.image?.planes?.get(0)
             for (y in 0 until image.height) {
                 for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
-                    val byte = plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE
-                    luminance[image.height - y - 1][x] = (127 - byte).toByte()
+                    val byte = (plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE)
+                    val f = byte.toFloat() / 256f
+                    luminance[image.height - y - 1][x] = 1 - if (f < 0) f + 1 else f
                 }
             }
+
+            println("mi : " + mi + " ma " + ma)
 
             val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
                 bitmap.width, iteration, lSystem
