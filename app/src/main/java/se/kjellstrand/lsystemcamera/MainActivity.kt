@@ -4,13 +4,13 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.*
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -23,9 +23,6 @@ import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.LSystemGenerator.generatePolygon
 import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.variablewidthline.buildHullFromPolygon
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -34,13 +31,11 @@ private const val CAMERA_IMAGE_SIZE = 200
 class MainActivity : AppCompatActivity() {
     private val iteration = 7
 
-    private var imageCapture: ImageCapture? = null
-
-    private lateinit var outputDirectory: File
     private lateinit var cameraExecutor: ExecutorService
-
     private lateinit var lSystem: LSystem
     private lateinit var line: List<Triple<Float, Float, Float>>
+
+    private val model: LSystemViewModel by viewModels()
 
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
 
@@ -66,47 +61,7 @@ class MainActivity : AppCompatActivity() {
                 this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
             )
         }
-
-        // Set up the listener for take photo button
-        camera_capture_button.setOnClickListener { takePhoto() }
-
-        outputDirectory = getOutputDirectory()
-
         cameraExecutor = Executors.newSingleThreadExecutor()
-    }
-
-    private fun takePhoto() {
-        // Get a stable reference of the modifiable image capture use case
-        val imageCapture = imageCapture ?: return
-
-        // Create time-stamped output file to hold the image
-        val photoFile = File(
-            outputDirectory,
-            SimpleDateFormat(
-                FILENAME_FORMAT, Locale.US
-            ).format(System.currentTimeMillis()) + ".jpg"
-        )
-
-        // Create output options object which contains file + metadata
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-        // Set up image capture listener, which is triggered after photo has
-        // been taken
-        imageCapture.takePicture(
-            outputOptions,
-            ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onError(exc: ImageCaptureException) {
-                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                }
-
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val savedUri = Uri.fromFile(photoFile)
-                    val msg = "Photo capture succeeded: $savedUri"
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
-                }
-            })
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -129,14 +84,8 @@ class MainActivity : AppCompatActivity() {
 
         // Preview
         val preview = Preview.Builder().build().also {
-            //it.setSurfaceProvider(viewFinder.createSurfaceProvider())
             it?.setSurfaceProvider(viewFinder.surfaceProvider)
         }
-
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            //.setTargetAspectRatio(screenAspectRatio)
-            .build()
 
         // Select back camera as a default
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -156,7 +105,6 @@ class MainActivity : AppCompatActivity() {
             cameraProvider.unbindAll()
 
             // Bind use cases to camera
-            cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
             cameraProvider.bindToLifecycle(this, cameraSelector, imageAnalysis, preview)
 
         } catch (exc: Exception) {
@@ -166,8 +114,6 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("UnsafeExperimentalUsageError")
     private fun analyzeImage(image: ImageProxy, size: Int) {
-        // val rotationDegrees = image.imageInfo.rotationDegrees
-
         if (luminance.size != image.width || luminance[0].size != image.height) {
             luminance = Array(image.height) { FloatArray(image.width) }
         }
@@ -177,10 +123,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         bitmap?.let { bitmap ->
-
-            var mi = 0f
-            var ma = 0f
-
             val plane = image.image?.planes?.get(0)
             for (y in 0 until image.height) {
                 for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
@@ -189,8 +131,6 @@ class MainActivity : AppCompatActivity() {
                     luminance[image.height - y - 1][x] = 1 - if (f < 0) f + 1 else f
                 }
             }
-
-            println("mi : " + mi + " ma " + ma)
 
             val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
                 bitmap.width, iteration, lSystem
@@ -246,14 +186,6 @@ class MainActivity : AppCompatActivity() {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun getOutputDirectory(): File {
-        val mediaDir = externalMediaDirs.firstOrNull()?.let {
-            File(it, resources.getString(R.string.app_name)).apply { mkdirs() }
-        }
-        return if (mediaDir != null && mediaDir.exists())
-            mediaDir else filesDir
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
@@ -281,7 +213,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "CameraXBasic"
-        private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
