@@ -24,8 +24,9 @@ import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
 import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.LSystemGenerator.generatePolygon
+import se.kjellstrand.lsystem.buildHullFromPolygon
+import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystem.model.LSystem
-import se.kjellstrand.variablewidthline.buildHullFromPolygon
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -36,7 +37,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var lSystem: LSystem
-    private lateinit var line: List<Triple<Float, Float, Float>>
+    private lateinit var line: MutableList<LSTriple>
 
     private val model: LSystemViewModel by viewModels()
 
@@ -52,9 +53,8 @@ class MainActivity : AppCompatActivity() {
 
         lSystem = LSystem.getByName("Hilbert")!!
 
-        line = generatePolygon(lSystem, iteration).map { p ->
-            Triple(p.first, p.second, 1F)
-        }.distinct()
+        line = generatePolygon(lSystem, iteration)
+        line.distinct()
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
-            analyzeImage(image, size)
+            analyzeImage(image)
         })
 
         try {
@@ -115,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun analyzeImage(image: ImageProxy, size: Int) {
+    private fun analyzeImage(image: ImageProxy) {
         if (luminance.size != image.width || luminance[0].size != image.height) {
             luminance = Array(image.height) { FloatArray(image.width) }
         }
@@ -127,7 +127,12 @@ class MainActivity : AppCompatActivity() {
 
         bitmap?.let { bitmap ->
 
-            val scaledVWLine = updateLSystem(image, bitmap.width, bitmap.height, size)
+            // TODO Dont do this for every frame
+            line = generatePolygon(lSystem, iteration)
+            line = line.distinct() as MutableList<LSTriple>
+            //----------
+
+            val scaledVWLine = updateLSystem(image, bitmap.width, bitmap.height)
 
             val hull = buildHullFromPolygon(scaledVWLine)
 
@@ -141,9 +146,9 @@ class MainActivity : AppCompatActivity() {
 
             val polyPath = Path()
             //polyPath.fillType = Path.FillType.WINDING
-            polyPath.moveTo(hull[0].first, hull[0].second)
+            polyPath.moveTo(hull[0].x, hull[0].y)
             hull.forEach { p ->
-                polyPath.lineTo(p.first, p.second)
+                polyPath.lineTo(p.x, p.y)
             }
             polyPath.close()
             c.drawPath(polyPath, paint)
@@ -160,8 +165,7 @@ class MainActivity : AppCompatActivity() {
         image: ImageProxy,
         width: Int,
         height: Int,
-        size: Int
-    ): List<Triple<Float, Float, Float>> {
+    ): MutableList<LSTriple> {
         val plane = image.image?.planes?.get(0)
         for (y in 0 until image.height) {
             for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
@@ -175,7 +179,7 @@ class MainActivity : AppCompatActivity() {
             width, iteration, lSystem
         )
 
-        val vWLine = LSystemGenerator.setLineWidthAccordingToImage(
+        LSystemGenerator.setLineWidthAccordingToImage(
             line = line,
             luminanceData = luminance,
             minWidth = minWidth,
@@ -183,13 +187,14 @@ class MainActivity : AppCompatActivity() {
         )
 
         val outputSideBuffer = width / 50
-        val adjustedLine =
-            LSystemGenerator.adjustToOutputRectangle(width, outputSideBuffer, vWLine)
 
-        return adjustedLine.map { p ->
-            // TODO stop making new Triple
-            Triple(p.first * width, p.second * height, p.third)
+        LSystemGenerator.adjustToOutputRectangle(width, outputSideBuffer, line)
+
+        line.forEach { p ->
+            p.x = p.x * width
+            p.y = p.y * height
         }
+        return line
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
