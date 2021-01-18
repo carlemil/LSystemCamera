@@ -13,7 +13,10 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -84,7 +87,7 @@ class MainActivity : AppCompatActivity() {
 
         // Preview
         val preview = Preview.Builder().build().also {
-            it?.setSurfaceProvider(viewFinder.surfaceProvider)
+            it.setSurfaceProvider(viewFinder.surfaceProvider)
         }
 
         // Select back camera as a default
@@ -112,7 +115,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("UnsafeExperimentalUsageError")
     private fun analyzeImage(image: ImageProxy, size: Int) {
         if (luminance.size != image.width || luminance[0].size != image.height) {
             luminance = Array(image.height) { FloatArray(image.width) }
@@ -122,38 +124,10 @@ class MainActivity : AppCompatActivity() {
             bitmap = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
         }
 
+
         bitmap?.let { bitmap ->
-            val plane = image.image?.planes?.get(0)
-            for (y in 0 until image.height) {
-                for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
-                    val byte = (plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE)
-                    val f = byte.toFloat() / 256f
-                    luminance[image.height - y - 1][x] = 1 - if (f < 0) f + 1 else f
-                }
-            }
 
-            val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                bitmap.width, iteration, lSystem
-            )
-
-            if (minWidth < 0.5 || minWidth < size / 5000) {
-                //return
-            }
-            val vWLine = LSystemGenerator.setLineWidthAccordingToImage(
-                line = line,
-                luminanceData = luminance,
-                minWidth = minWidth,
-                maxWidth = maxWidth
-            )
-
-            val outputSideBuffer = bitmap.width / 50
-            val adjustedLine =
-                LSystemGenerator.adjustToOutputRectangle(bitmap.width, outputSideBuffer, vWLine)
-
-            val scaledVWLine = adjustedLine.map { p ->
-                // TODO stop making new Triple
-                Triple(p.first * bitmap.width, p.second * bitmap.height, p.third)
-            }
+            val scaledVWLine = updateLSystem(image, bitmap.width, bitmap.height, size)
 
             val hull = buildHullFromPolygon(scaledVWLine)
 
@@ -178,8 +152,44 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread {
             imageView.setImageBitmap(bitmap)
         }
-
         image.close()
+    }
+
+    @SuppressLint("UnsafeExperimentalUsageError")
+    private fun updateLSystem(
+        image: ImageProxy,
+        width: Int,
+        height: Int,
+        size: Int
+    ): List<Triple<Float, Float, Float>> {
+        val plane = image.image?.planes?.get(0)
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
+                val byte = (plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE)
+                val f = byte.toFloat() / 256f
+                luminance[image.height - y - 1][x] = 1 - if (f < 0) f + 1 else f
+            }
+        }
+
+        val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
+            width, iteration, lSystem
+        )
+
+        val vWLine = LSystemGenerator.setLineWidthAccordingToImage(
+            line = line,
+            luminanceData = luminance,
+            minWidth = minWidth,
+            maxWidth = maxWidth
+        )
+
+        val outputSideBuffer = width / 50
+        val adjustedLine =
+            LSystemGenerator.adjustToOutputRectangle(width, outputSideBuffer, vWLine)
+
+        return adjustedLine.map { p ->
+            // TODO stop making new Triple
+            Triple(p.first * width, p.second * height, p.third)
+        }
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
