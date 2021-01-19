@@ -13,4 +13,5 @@ class LSystemViewModel : ViewModel() {
     val minWidthMod: LiveData<Float> = MutableLiveData(1F)
     val maxWidthMod: LiveData<Float> = MutableLiveData(1F)
 
+    fun getIterations() = iterations.value ?: 2
 }

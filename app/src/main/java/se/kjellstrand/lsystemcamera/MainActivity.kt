@@ -27,13 +27,13 @@ import se.kjellstrand.lsystem.LSystemGenerator.generatePolygon
 import se.kjellstrand.lsystem.buildHullFromPolygon
 import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystem.model.LSystem
+import se.kjellstrand.lsystem.buildHullFromPolygon
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 private const val CAMERA_IMAGE_SIZE = 200
 
 class MainActivity : AppCompatActivity() {
-    private val iteration = 7
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var lSystem: LSystem
@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 
         lSystem = LSystem.getByName("Hilbert")!!
 
-        line = generatePolygon(lSystem, iteration)
+        line = generatePolygon(lSystem, model.getIterations())
         line.distinct()
 
         // Request camera permissions
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             startCamera(CAMERA_IMAGE_SIZE)
         } else {
             ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+                    this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
             )
         }
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -80,8 +80,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleCamera(
-        cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
-        size: Int
+            cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
+            size: Int
     ) {
         val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
@@ -94,10 +94,10 @@ class MainActivity : AppCompatActivity() {
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
         val imageAnalysis = ImageAnalysis.Builder()
-            .setTargetResolution(Size(size, size))
-            .setTargetRotation(Surface.ROTATION_0) // TODO Figure out why this is broken and do not work.
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
+                .setTargetResolution(Size(size, size))
+                .setTargetRotation(Surface.ROTATION_0) // TODO Figure out why this is broken and do not work.
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
 
         imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
             analyzeImage(image)
@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity() {
         bitmap?.let { bitmap ->
 
             // TODO Dont do this for every frame
-            line = generatePolygon(lSystem, iteration)
+            line = generatePolygon(lSystem, model.getIterations())
             line = line.distinct() as MutableList<LSTriple>
             //----------
 
@@ -162,9 +162,9 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("UnsafeExperimentalUsageError")
     private fun updateLSystem(
-        image: ImageProxy,
-        width: Int,
-        height: Int,
+            image: ImageProxy,
+            width: Int,
+            height: Int,
     ): MutableList<LSTriple> {
         val plane = image.image?.planes?.get(0)
         for (y in 0 until image.height) {
@@ -176,14 +176,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-            width, iteration, lSystem
+                width, model.getIterations(), lSystem
         )
 
         LSystemGenerator.setLineWidthAccordingToImage(
-            line = line,
-            luminanceData = luminance,
-            minWidth = minWidth,
-            maxWidth = maxWidth
+                line = line,
+                luminanceData = luminance,
+                minWidth = minWidth,
+                maxWidth = maxWidth
         )
 
         val outputSideBuffer = width / 50
@@ -208,18 +208,18 @@ class MainActivity : AppCompatActivity() {
 
     @androidx.camera.core.ExperimentalGetImage
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
+            requestCode: Int,
+            permissions: Array<String>,
+            grantResults: IntArray
     ) {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 startCamera(CAMERA_IMAGE_SIZE)
             } else {
                 Toast.makeText(
-                    this,
-                    "Permissions not granted by the user.",
-                    Toast.LENGTH_SHORT
+                        this,
+                        "Permissions not granted by the user.",
+                        Toast.LENGTH_SHORT
                 ).show()
                 finish()
             }
