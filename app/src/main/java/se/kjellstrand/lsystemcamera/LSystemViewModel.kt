@@ -7,11 +7,12 @@ import se.kjellstrand.lsystem.model.LSystem
 
 class LSystemViewModel : ViewModel() {
     private val defaultSystemName = "Fudgeflake"
-    val lSystem: LSystem? = LSystem.getByName(defaultSystemName)
-    val iterations: LiveData<Int> = MutableLiveData(5)
-    val name: LiveData<String> = MutableLiveData(defaultSystemName)
-    val minWidthMod: LiveData<Float> = MutableLiveData(1F)
-    val maxWidthMod: LiveData<Float> = MutableLiveData(1F)
+    private val lSystem: LSystem = LSystem.getByName(defaultSystemName)
+    private val iterations: LiveData<Int> = MutableLiveData(5)
+    private val name: LiveData<String> = MutableLiveData(defaultSystemName)
+    private val minWidthMod: LiveData<Float> = MutableLiveData(1F)
+    private val maxWidthMod: LiveData<Float> = MutableLiveData(1F)
 
     fun getIterations() = iterations.value ?: 2
+    fun getLSystem() = lSystem
 }

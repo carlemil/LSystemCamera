@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        lSystem = LSystem.getByName("Hilbert")!!
+        lSystem = model.getLSystem()
 
         line = generatePolygon(lSystem, model.getIterations())
         line.distinct()
