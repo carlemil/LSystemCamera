@@ -20,6 +20,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.chip.Chip
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
 import se.kjellstrand.lsystem.LSystemGenerator
@@ -27,7 +28,6 @@ import se.kjellstrand.lsystem.LSystemGenerator.generatePolygon
 import se.kjellstrand.lsystem.buildHullFromPolygon
 import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystem.model.LSystem
-import se.kjellstrand.lsystem.buildHullFromPolygon
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -36,7 +36,6 @@ private const val CAMERA_IMAGE_SIZE = 200
 class MainActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var lSystem: LSystem
     private lateinit var line: MutableList<LSTriple>
 
     private val model: LSystemViewModel by viewModels()
@@ -51,20 +50,53 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        lSystem = model.getLSystem()
+        LSystem.systems
+            .map { system -> system.name }
+            .forEach { name ->
+                val chip = Chip(this)
+                chip.text = name
+                chip.setOnClickListener {
+                    LSystem.getByName(name)?.let { system ->
+                        model.iterations.value = getMaxIterations(system)
+                        model.lSystem.value = system
+                        println("it: " + model.iterations.value)
+                    }
+                }
+                chips.addView(chip)
+            }
 
-        line = generatePolygon(lSystem, model.getIterations())
-        line.distinct()
+        model.lSystem.value?.let { system ->
+            line = generatePolygon(system, model.getIterations())
+            line.distinct()
+        }
+
+//        model.lSystem.observe(this, Observer { system ->
+//
+//        })
 
         // Request camera permissions
         if (allPermissionsGranted()) {
             startCamera(CAMERA_IMAGE_SIZE)
         } else {
             ActivityCompat.requestPermissions(
-                    this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
             )
         }
         cameraExecutor = Executors.newSingleThreadExecutor()
+    }
+
+    fun getMaxIterations(system: LSystem): Int {
+        var iterations = 1
+        var minWidth = 1F
+        while (minWidth >= 1) {
+            var (_minWidth, _) = LSystemGenerator.getRecommendedMinAndMaxWidth(
+                imageView.width,
+                ++iterations,
+                system
+            )
+            minWidth = _minWidth
+        }
+        return iterations
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -80,8 +112,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleCamera(
-            cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
-            size: Int
+        cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
+        size: Int
     ) {
         val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
@@ -94,10 +126,10 @@ class MainActivity : AppCompatActivity() {
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
         val imageAnalysis = ImageAnalysis.Builder()
-                .setTargetResolution(Size(size, size))
-                .setTargetRotation(Surface.ROTATION_0) // TODO Figure out why this is broken and do not work.
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
+            .setTargetResolution(Size(size, size))
+            .setTargetRotation(Surface.ROTATION_0) // TODO Figure out why this is broken and do not work.
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
 
         imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
             analyzeImage(image)
@@ -124,48 +156,45 @@ class MainActivity : AppCompatActivity() {
             bitmap = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
         }
 
-
         bitmap?.let { bitmap ->
+            model.lSystem.value?.let { system ->
+                line = generatePolygon(system, model.getIterations())
+                line = line.distinct() as MutableList<LSTriple>
 
-            // TODO Dont do this for every frame
-            line = generatePolygon(lSystem, model.getIterations())
-            line = line.distinct() as MutableList<LSTriple>
-            //----------
+                val scaledLine = updateLSystem(image)
 
-            val scaledVWLine = updateLSystem(image, bitmap.width, bitmap.height)
+                val hull = buildHullFromPolygon(scaledLine)
 
-            val hull = buildHullFromPolygon(scaledVWLine)
+                val c = Canvas(bitmap)
+                val bgPaint = Paint()
+                bgPaint.color = Color.WHITE
+                c.drawRect(0F, 0F, c.width.toFloat(), c.height.toFloat(), bgPaint)
+                val paint = Paint()
+                paint.color = Color.BLACK
+                paint.style = Paint.Style.FILL_AND_STROKE
 
-            val c = Canvas(bitmap)
-            val bgPaint = Paint()
-            bgPaint.color = Color.WHITE
-            c.drawRect(0F, 0F, c.width.toFloat(), c.height.toFloat(), bgPaint)
-            val paint = Paint()
-            paint.color = Color.BLACK
-            paint.style = Paint.Style.FILL_AND_STROKE
-
-            val polyPath = Path()
-            //polyPath.fillType = Path.FillType.WINDING
-            polyPath.moveTo(hull[0].x, hull[0].y)
-            hull.forEach { p ->
-                polyPath.lineTo(p.x, p.y)
+                val polyPath = Path()
+                //polyPath.fillType = Path.FillType.WINDING
+                polyPath.moveTo(hull[0].x, hull[0].y)
+                hull.forEach { p ->
+                    polyPath.lineTo(p.x, p.y)
+                }
+                polyPath.close()
+                c.drawPath(polyPath, paint)
             }
-            polyPath.close()
-            c.drawPath(polyPath, paint)
-        }
 
-        runOnUiThread {
-            imageView.setImageBitmap(bitmap)
+            runOnUiThread {
+                imageView.setImageBitmap(bitmap)
+            }
         }
         image.close()
     }
 
     @SuppressLint("UnsafeExperimentalUsageError")
     private fun updateLSystem(
-            image: ImageProxy,
-            width: Int,
-            height: Int,
+        image: ImageProxy,
     ): MutableList<LSTriple> {
+        val width = imageView.width
         val plane = image.image?.planes?.get(0)
         for (y in 0 until image.height) {
             for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
@@ -175,24 +204,26 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                width, model.getIterations(), lSystem
-        )
+        model.lSystem.value?.let { system ->
+            val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
+                width, model.getIterations(), system
+            )
 
-        LSystemGenerator.setLineWidthAccordingToImage(
+            LSystemGenerator.setLineWidthAccordingToImage(
                 line = line,
                 luminanceData = luminance,
                 minWidth = minWidth,
                 maxWidth = maxWidth
-        )
+            )
 
-        val outputSideBuffer = width / 50
+            val outputSideBuffer = imageView.width / 50
 
-        LSystemGenerator.adjustToOutputRectangle(width, outputSideBuffer, line)
+            LSystemGenerator.adjustToOutputRectangle(imageView.width, outputSideBuffer, line)
 
-        line.forEach { p ->
-            p.x = p.x * width
-            p.y = p.y * height
+            line.forEach { p ->
+                p.x = p.x * imageView.width
+                p.y = p.y * imageView.height
+            }
         }
         return line
     }
@@ -208,18 +239,18 @@ class MainActivity : AppCompatActivity() {
 
     @androidx.camera.core.ExperimentalGetImage
     override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<String>,
-            grantResults: IntArray
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
     ) {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 startCamera(CAMERA_IMAGE_SIZE)
             } else {
                 Toast.makeText(
-                        this,
-                        "Permissions not granted by the user.",
-                        Toast.LENGTH_SHORT
+                    this,
+                    "Permissions not granted by the user.",
+                    Toast.LENGTH_SHORT
                 ).show()
                 finish()
             }
