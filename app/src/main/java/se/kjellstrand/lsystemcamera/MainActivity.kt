@@ -75,8 +75,6 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
-    override onViewCre
-
     private fun inflateSystemNameSelectorChips() {
         LSystem.systems
             .map { system -> system.name }
