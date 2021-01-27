@@ -20,6 +20,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
 import com.google.android.material.chip.Chip
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
@@ -30,6 +31,7 @@ import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystem.model.LSystem
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.random.Random
 
 private const val CAMERA_IMAGE_SIZE = 200
 
@@ -39,8 +41,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var line: MutableList<LSTriple>
 
     private val model: LSystemViewModel by viewModels()
-
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
+    private val bannedSystemNames = listOf("KochSnowFlake")
 
     private var luminance: Array<FloatArray> = Array(0) { FloatArray(0) }
     private var bitmap: Bitmap? = null
@@ -50,29 +52,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        LSystem.systems
-            .map { system -> system.name }
-            .forEach { name ->
-                val chip = Chip(this)
-                chip.text = name
-                chip.setOnClickListener {
-                    LSystem.getByName(name)?.let { system ->
-                        model.iterations.value = getMaxIterations(system)
-                        model.lSystem.value = system
-                        println("it: " + model.iterations.value)
-                    }
-                }
-                chips.addView(chip)
-            }
+        inflateSystemNameSelectorChips()
 
-        model.lSystem.value?.let { system ->
+        model.lSystem.observe(this, Observer { system ->
+            model.setMaxIterations(system, imageView)
             line = generatePolygon(system, model.getIterations())
             line.distinct()
-        }
+        })
 
-//        model.lSystem.observe(this, Observer { system ->
-//
-//        })
+        // Set a random system to start with.
+        model.lSystem.value =
+            LSystem.getByName(LSystem.systems[Random.nextInt(0, LSystem.systems.size - 1)].name)
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -85,18 +75,21 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
-    fun getMaxIterations(system: LSystem): Int {
-        var iterations = 1
-        var minWidth = 1F
-        while (minWidth >= 1) {
-            var (_minWidth, _) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                imageView.width,
-                ++iterations,
-                system
-            )
-            minWidth = _minWidth
-        }
-        return iterations
+    override onViewCre
+
+    private fun inflateSystemNameSelectorChips() {
+        LSystem.systems
+            .map { system -> system.name }
+            .filter { it !in bannedSystemNames }
+            .sorted()
+            .forEach { name ->
+                val chip = Chip(this)
+                chip.text = name
+                chip.setOnClickListener {
+                    LSystem.getByName(name)?.let { system -> model.lSystem.value = system }
+                }
+                chips.addView(chip)
+            }
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
