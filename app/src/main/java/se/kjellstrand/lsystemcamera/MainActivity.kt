@@ -31,7 +31,6 @@ import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystem.model.LSystem
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.random.Random
 
 private const val CAMERA_IMAGE_SIZE = 200
 
@@ -143,7 +142,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun analyzeImage(image: ImageProxy) {
         if (luminance.size != image.width || luminance[0].size != image.height) {
-            luminance = Array(image.height) { FloatArray(image.width) }
+            luminance = Array(image.height) { FloatArray(image.height) }
         }
 
         if (bitmap == null) {
@@ -190,15 +189,19 @@ class MainActivity : AppCompatActivity() {
     ): MutableList<LSTriple> {
         val width = imageView.width
         val plane = image.image?.planes?.get(0)
+
+        // TODO Check if w > h and do opposite
+        val vhDiff = (image.width - image.height) / 2
         val hRange = 0 until image.height
-        val vRange = 0 until image.width
+        val vRange = vhDiff until image.width - vhDiff
         for (y in hRange) {
             for (x in vRange) {
                 val byte = (plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE)
                 val f = byte.toFloat() / 256f
-                luminance[image.height - y - 1][x] = 1 - if (f < 0) f + 1 else f
+                luminance[image.height - y - 1][x-vhDiff] = 1 - if (f < 0) f + 1 else f
             }
         }
+        // en todo
 
         model.lSystem.value?.let { system ->
             val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
