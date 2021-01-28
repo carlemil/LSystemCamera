@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
 
         // Set a random system to start with.
         model.lSystem.value =
-            LSystem.getByName(LSystem.systems[Random.nextInt(0, LSystem.systems.size - 1)].name)
+            LSystem.getByName("Moore") // LSystem.systems[Random.nextInt(0, LSystem.systems.size - 1)].name)
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -75,6 +75,9 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
+
+    // TODO move shit to fragment
+
     private fun inflateSystemNameSelectorChips() {
         LSystem.systems
             .map { system -> system.name }
@@ -84,7 +87,7 @@ class MainActivity : AppCompatActivity() {
                 val chip = Chip(this)
                 chip.text = name
                 chip.setOnClickListener {
-                    LSystem.getByName(name)?.let { system -> model.lSystem.value = system }
+                    LSystem.getByName(name).let { system -> model.lSystem.value = system }
                 }
                 chips.addView(chip)
             }
@@ -187,8 +190,10 @@ class MainActivity : AppCompatActivity() {
     ): MutableList<LSTriple> {
         val width = imageView.width
         val plane = image.image?.planes?.get(0)
-        for (y in 0 until image.height) {
-            for (x in 0 until image.width) { // TODO go from 10..90 using rowStride and imageWidth to figure out start and stop positions
+        val hRange = 0 until image.height
+        val vRange = 0 until image.width
+        for (y in hRange) {
+            for (x in vRange) {
                 val byte = (plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE)
                 val f = byte.toFloat() / 256f
                 luminance[image.height - y - 1][x] = 1 - if (f < 0) f + 1 else f
