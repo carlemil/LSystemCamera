@@ -1,4 +1,4 @@
-package se.kjellstrand.lsystemcamera
+package se.kjellstrand.lsystemcamera.viewmodel
 
 import android.widget.ImageView
 import androidx.lifecycle.MutableLiveData

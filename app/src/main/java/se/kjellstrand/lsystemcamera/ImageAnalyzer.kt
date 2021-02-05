@@ -7,6 +7,7 @@ import androidx.camera.core.ImageProxy
 import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.buildHullFromPolygon
 import se.kjellstrand.lsystem.model.LSTriple
+import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 
 class ImageAnalyzer {
 

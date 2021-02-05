@@ -23,6 +23,7 @@ import com.google.android.material.chip.Chip
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
 import se.kjellstrand.lsystem.model.LSystem
+import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 

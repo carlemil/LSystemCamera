@@ -1,4 +1,4 @@
-package se.kjellstrand.lsystemcamera
+package se.kjellstrand.lsystemcamera.view
 
 import android.annotation.TargetApi
 import android.content.Context
