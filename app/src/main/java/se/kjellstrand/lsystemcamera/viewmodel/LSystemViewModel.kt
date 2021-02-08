@@ -15,14 +15,14 @@ class LSystemViewModel : ViewModel() {
     val iterations: MutableLiveData<Int> = MutableLiveData(5)
     val lSystem: MutableLiveData<LSystem> = MutableLiveData()
 
-    fun getIterations() = iterations.value ?: 2
+    fun getIterations() = iterations.value ?: 5
 
     fun setMaxIterations(system: LSystem, imageView: ImageView) {
         var iterations = 1
         var minWidth = 1F
         while (minWidth >= 1) {
             var (_minWidth, _) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                imageView.width,
+                1f,
                 ++iterations,
                 system
             )

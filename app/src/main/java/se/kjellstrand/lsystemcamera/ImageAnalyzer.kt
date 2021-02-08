@@ -22,7 +22,7 @@ class ImageAnalyzer {
         ) {
             model.lSystem.value?.let { system ->
                 line = LSystemGenerator.generatePolygon(system, model.getIterations())
-                model.setMaxIterations(system, imageView)
+                // model.setMaxIterations(system, imageView)
                 line.distinct()
             }
         }
@@ -46,7 +46,7 @@ class ImageAnalyzer {
                     line = LSystemGenerator.generatePolygon(system, model.getIterations())
                     line = line.distinct() as MutableList<LSTriple>
 
-                    val scaledLine = updateLSystem(image, imageView, luminance, model, line)
+                    val scaledLine = updateLSystem(image, luminance, model, line)
 
                     val hull = buildHullFromPolygon(scaledLine)
 
@@ -64,11 +64,14 @@ class ImageAnalyzer {
                     hull.forEach { p ->
                         polyPath.lineTo(p.x, p.y)
                     }
+
+                    val matrix = Matrix()
+                    matrix.postScale(imageView.width.toFloat(), imageView.height.toFloat())
+                    polyPath.transform(matrix)
                     polyPath.close()
+
                     c.drawPath(polyPath, paint)
                 }
-
-
             }
             image.close()
             return bitmap
@@ -77,12 +80,10 @@ class ImageAnalyzer {
         @SuppressLint("UnsafeExperimentalUsageError")
         fun updateLSystem(
             image: ImageProxy,
-            imageView: ImageView,
             luminance: Array<FloatArray>,
             model: LSystemViewModel,
             line: MutableList<LSTriple>
         ): MutableList<LSTriple> {
-            val width = imageView.width
             val plane = image.image?.planes?.get(0)
 
             // TODO Check if w > h and do opposite
@@ -100,7 +101,7 @@ class ImageAnalyzer {
 
             model.lSystem.value?.let { system ->
                 val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                    width, model.getIterations(), system
+                    1f, model.getIterations(), system
                 )
 
                 LSystemGenerator.setLineWidthAccordingToImage(
@@ -110,14 +111,11 @@ class ImageAnalyzer {
                     maxWidth = maxWidth
                 )
 
-                val outputSideBuffer = imageView.width / 50
+                LSystemGenerator.smoothenWidthOfLine(line)
 
-                LSystemGenerator.adjustToOutputRectangle(imageView.width, outputSideBuffer, line)
+                val outputSideBuffer = 0.02f
 
-                line.forEach { p ->
-                    p.x = p.x * imageView.width
-                    p.y = p.y * imageView.height
-                }
+                LSystemGenerator.addSideBuffer(outputSideBuffer, line)
             }
             return line
         }
