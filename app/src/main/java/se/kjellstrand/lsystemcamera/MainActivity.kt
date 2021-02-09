@@ -8,6 +8,10 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.view.Surface
+import android.view.View
+import android.widget.AdapterView
+import android.widget.AdapterView.OnItemSelectedListener
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
@@ -19,13 +23,16 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
-import com.google.android.material.chip.Chip
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.single_line_text_item.view.*
 import se.kjellstrand.lsystem.model.LSystem
+import se.kjellstrand.lsystemcamera.view.CustomAdapter
+import se.kjellstrand.lsystemcamera.view.RowItem
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 
 private const val CAMERA_IMAGE_SIZE = 200
 
@@ -43,8 +50,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        inflateSystemNameSelectorChips()
 
         model.lSystem.observe(this, Observer {
             ImageAnalyzer.updateLSystem(model, imageView)
@@ -69,19 +74,38 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
+    override fun onStart() {
+        super.onStart()
+        inflateSystemNameSelectorChips()
+    }
+
     private fun inflateSystemNameSelectorChips() {
-        LSystem.systems
+        val systemsNames = LSystem.systems
             .map { system -> system.name }
-            .filter { it !in bannedSystemNames }
             .sorted()
-            .forEach { name ->
-                val chip = Chip(this)
-                chip.text = name
-                chip.setOnClickListener {
-                    LSystem.getByName(name).let { system -> model.lSystem.value = system }
-                }
-                chips.addView(chip)
+            .filter { name -> name !in bannedSystemNames }
+
+        val spinner: Spinner = findViewById(R.id.system_selector_spinner)
+        spinner.adapter = CustomAdapter(
+            this@MainActivity,
+            R.layout.single_line_text_item,
+            R.id.title,
+            systemsNames.map { name -> RowItem(name) }
+        )
+
+        spinner.onItemSelectedListener = object : OnItemSelectedListener {
+            override fun onItemSelected(
+                parentView: AdapterView<*>?,
+                selectedItemView: View,
+                position: Int,
+                id: Long
+            ) {
+                LSystem.getByName(systemsNames[position])
+                    .let { system -> model.lSystem.value = system }
             }
+
+            override fun onNothingSelected(parentView: AdapterView<*>?) {}
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.P)

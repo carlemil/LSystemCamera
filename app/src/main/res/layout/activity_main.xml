@@ -28,8 +28,8 @@
             android:layout_height="match_parent" />
     </se.kjellstrand.lsystemcamera.view.SquareLayout>
 
-    <com.google.android.material.chip.ChipGroup
-        android:id="@+id/chips"
+    <Spinner
+        android:id="@+id/system_selector_spinner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
