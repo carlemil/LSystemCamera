@@ -36,4 +36,27 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/squareLayout" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/minSlider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:value="0.0"
+        android:valueFrom="-10.0"
+        android:valueTo="10.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/system_selector_spinner" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/maxSlider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:value="0.0"
+        android:valueFrom="-10.0"
+        android:valueTo="10.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/minSlider" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

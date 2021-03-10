@@ -22,10 +22,11 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
+import com.google.android.material.slider.Slider
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.single_line_text_item.view.*
+import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.lsystemcamera.view.CustomAdapter
 import se.kjellstrand.lsystemcamera.view.RowItem
@@ -51,15 +52,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        model.lSystem.observe(this, Observer {
+        model.observeLSystem(this, {
             ImageAnalyzer.updateLSystem(model, imageView)
+            val system = model.getLSystem()
+            system?.let { system ->
+                val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
+                    1f, model.getIterations(), system
+                )
+                model.setMinWidth(minWidth)
+                model.setMaxWidth(maxWidth)
+            }
         })
 
         // Set a random system to start with.
         val defaultSystem = LSystem.getByName("Moore")
-        defaultSystem?.let { system ->
-            model.lSystem.value =
-                system // LSystem.systems[Random.nextInt(0, LSystem.systems.size - 1)].name)
+        defaultSystem.let { system ->
+            model.setLSystem(system) // LSystem.systems[Random.nextInt(0, LSystem.systems.size - 1)].name)
             ImageAnalyzer.updateLSystem(model, imageView)
         }
 
@@ -76,10 +84,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        inflateSystemNameSelectorChips()
+        inflateSystemNameSpinner()
+        inflateMinMaxWidthRangeSlider()
     }
 
-    private fun inflateSystemNameSelectorChips() {
+    private fun inflateSystemNameSpinner() {
         val systemsNames = LSystem.systems
             .map { system -> system.name }
             .sorted()
@@ -101,11 +110,25 @@ class MainActivity : AppCompatActivity() {
                 id: Long
             ) {
                 LSystem.getByName(systemsNames[position])
-                    .let { system -> model.lSystem.value = system }
+                    .let { system -> model.setLSystem(system) }
             }
 
             override fun onNothingSelected(parentView: AdapterView<*>?) {}
         }
+    }
+
+    private fun inflateMinMaxWidthRangeSlider() {
+        val minSlider: Slider = findViewById(R.id.minSlider)
+        minSlider.addOnChangeListener { slider, _, _ ->
+            model.setMinWidthMod(slider.value)
+        }
+        minSlider.setLabelFormatter { value -> value.toString() }
+
+        val maxSlider: Slider = findViewById(R.id.maxSlider)
+        maxSlider.addOnChangeListener { slider, _, _ ->
+            model.setMaxWidthMod(slider.value)
+        }
+        maxSlider.setLabelFormatter { value -> value.toString() }
     }
 
     @RequiresApi(Build.VERSION_CODES.P)

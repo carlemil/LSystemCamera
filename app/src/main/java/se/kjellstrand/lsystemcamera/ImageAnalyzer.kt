@@ -20,9 +20,9 @@ class ImageAnalyzer {
             model: LSystemViewModel,
             imageView: ImageView
         ) {
-            model.lSystem.value?.let { system ->
+            model.getLSystem()?.let { system ->
                 line = LSystemGenerator.generatePolygon(system, model.getIterations())
-                // model.setMaxIterations(system, imageView)
+                model.calculateAndSetMaxIterations(system, imageView)
                 line.distinct()
             }
         }
@@ -42,7 +42,7 @@ class ImageAnalyzer {
             }
 
             bitmap?.let { bitmap ->
-                model.lSystem.value?.let { system ->
+                model.getLSystem()?.let { system ->
                     line = LSystemGenerator.generatePolygon(system, model.getIterations())
                     line = line.distinct() as MutableList<LSTriple>
 
@@ -99,24 +99,24 @@ class ImageAnalyzer {
             }
             // TODO END
 
-            model.lSystem.value?.let { system ->
-                val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                    1f, model.getIterations(), system
-                )
+            val maxWidth = model.getMaxWidth()
+            val minWidth = model.getMinWidth()
+            val maxWidthMod = model.getMaxWidthMod()
+            val minWidthMod = model.getMinWidthMod()
 
-                LSystemGenerator.setLineWidthAccordingToImage(
-                    line = line,
-                    luminanceData = luminance,
-                    minWidth = minWidth,
-                    maxWidth = maxWidth
-                )
+            LSystemGenerator.setLineWidthAccordingToImage(
+                line = line,
+                luminanceData = luminance,
+                minWidth = minWidth + minWidthMod * minWidth * 0.5f,
+                maxWidth = maxWidth + maxWidthMod * maxWidth * 0.05f
+            )
 
-                LSystemGenerator.smoothenWidthOfLine(line)
+            LSystemGenerator.smoothenWidthOfLine(line)
 
-                val outputSideBuffer = 0.02f
+            val outputSideBuffer = 0.02f
 
-                LSystemGenerator.addSideBuffer(outputSideBuffer, line)
-            }
+            LSystemGenerator.addSideBuffer(outputSideBuffer, line)
+
             return line
         }
     }
