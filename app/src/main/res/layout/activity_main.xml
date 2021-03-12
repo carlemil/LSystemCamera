@@ -38,25 +38,37 @@
         app:layout_constraintTop_toBottomOf="@+id/squareLayout" />
 
     <com.google.android.material.slider.Slider
-        android:id="@+id/minSlider"
+        android:id="@+id/contrastSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:value="0.0"
-        android:valueFrom="-10.0"
-        android:valueTo="10.0"
+        android:value="1.0"
+        android:valueFrom="0.0"
+        android:valueTo="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/system_selector_spinner" />
 
     <com.google.android.material.slider.Slider
-        android:id="@+id/maxSlider"
+        android:id="@+id/brightnessSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
         android:value="0.0"
-        android:valueFrom="-10.0"
-        android:valueTo="10.0"
+        android:valueFrom="-2.0"
+        android:valueTo="2.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/minSlider" />
+        app:layout_constraintTop_toBottomOf="@+id/contrastSlider" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/iterationsSlider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:stepSize="1"
+        android:value="2"
+        android:valueFrom="1"
+        android:valueTo="3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/brightnessSlider" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

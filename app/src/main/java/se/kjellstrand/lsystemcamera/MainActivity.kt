@@ -35,12 +35,18 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
-private const val CAMERA_IMAGE_SIZE = 200
-
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var cameraExecutor: ExecutorService
+    companion object {
+        private const val TAG = "CameraXBasic"
+        private const val CAMERA_IMAGE_SIZE = 200
+        private const val REQUEST_CODE_PERMISSIONS = 10
+        private const val DEFAULT_SYSTEM = "Moore"
 
+        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+    }
+
+    private lateinit var cameraExecutor: ExecutorService
     private val model: LSystemViewModel by viewModels()
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
     private val bannedSystemNames = listOf("KochSnowFlake")
@@ -52,26 +58,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        model.observeLSystem(this, {
-            ImageAnalyzer.updateLSystem(model, imageView)
-            val system = model.getLSystem()
-            system?.let { system ->
-                val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                    1f, model.getIterations(), system
-                )
-                model.setMinWidth(minWidth)
-                model.setMaxWidth(maxWidth)
-            }
-        })
+        setupLSystemObserver()
+        setupMaxIterationsObserver()
 
-        // Set a random system to start with.
-        val defaultSystem = LSystem.getByName("Moore")
-        defaultSystem.let { system ->
-            model.setLSystem(system) // LSystem.systems[Random.nextInt(0, LSystem.systems.size - 1)].name)
-            ImageAnalyzer.updateLSystem(model, imageView)
-        }
+        requestCameraPermissions()
 
-        // Request camera permissions
+        cameraExecutor = Executors.newSingleThreadExecutor()
+    }
+
+    @androidx.camera.core.ExperimentalGetImage
+    private fun requestCameraPermissions() {
         if (allPermissionsGranted()) {
             startCamera(CAMERA_IMAGE_SIZE)
         } else {
@@ -79,13 +75,48 @@ class MainActivity : AppCompatActivity() {
                 this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
             )
         }
-        cameraExecutor = Executors.newSingleThreadExecutor()
+    }
+
+    private fun setupLSystemObserver() {
+        model.observeLSystem(this, {
+            ImageAnalyzer.updateLSystem(model)
+            model.getLSystem()?.let { system ->
+                model.calculateAndSetMaxIterations(system, imageView)
+
+                val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
+                    1f, model.getIterations(), system
+                )
+                model.setMinWidth(minWidth)
+                model.setMaxWidth(maxWidth)
+
+                val maxIterations = model.getMaxIterations()
+                val iterations = (maxIterations / 2).toFloat()
+                val iterationsSlider: Slider = findViewById(R.id.iterationsSlider)
+                iterationsSlider.value = 2f
+                iterationsSlider.valueTo = maxIterations.toFloat()
+                model.setIterations(iterations.toInt())
+                iterationsSlider.value = iterations
+            }
+        })
+    }
+
+    private fun setupMaxIterationsObserver() {
+        model.observeMaxIterations(this, { maxIterations ->
+            model.getLSystem()?.let { system ->
+                val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
+                    1f, maxIterations, system
+                )
+                model.setMinWidth(minWidth)
+                model.setMaxWidth(maxWidth)
+            }
+        })
     }
 
     override fun onStart() {
         super.onStart()
         inflateSystemNameSpinner()
-        inflateMinMaxWidthRangeSlider()
+        inflateBrightnessAndContrastSliders()
+        inflateIterationsSlider()
     }
 
     private fun inflateSystemNameSpinner() {
@@ -101,7 +132,6 @@ class MainActivity : AppCompatActivity() {
             R.id.title,
             systemsNames.map { name -> RowItem(name) }
         )
-
         spinner.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(
                 parentView: AdapterView<*>?,
@@ -115,20 +145,33 @@ class MainActivity : AppCompatActivity() {
 
             override fun onNothingSelected(parentView: AdapterView<*>?) {}
         }
+
+        val selectedIndex = systemsNames.indexOf(DEFAULT_SYSTEM)
+        if (selectedIndex != -1) {
+            spinner.setSelection(selectedIndex)
+        }
     }
 
-    private fun inflateMinMaxWidthRangeSlider() {
-        val minSlider: Slider = findViewById(R.id.minSlider)
-        minSlider.addOnChangeListener { slider, _, _ ->
-            model.setMinWidthMod(slider.value)
+    private fun inflateBrightnessAndContrastSliders() {
+        val contrastSlider: Slider = findViewById(R.id.contrastSlider)
+        contrastSlider.addOnChangeListener { slider, _, _ ->
+            model.setContrastMod(slider.value)
         }
-        minSlider.setLabelFormatter { value -> value.toString() }
+        contrastSlider.setLabelFormatter { value -> value.toString() }
 
-        val maxSlider: Slider = findViewById(R.id.maxSlider)
-        maxSlider.addOnChangeListener { slider, _, _ ->
-            model.setMaxWidthMod(slider.value)
+        val brightnessSlider: Slider = findViewById(R.id.brightnessSlider)
+        brightnessSlider.addOnChangeListener { slider, _, _ ->
+            model.setBrightnessMod(slider.value)
         }
-        maxSlider.setLabelFormatter { value -> value.toString() }
+        brightnessSlider.setLabelFormatter { value -> value.toString() }
+    }
+
+    private fun inflateIterationsSlider() {
+        val iterationsSlider: Slider = findViewById(R.id.iterationsSlider)
+        iterationsSlider.addOnChangeListener { slider, _, _ ->
+            model.setIterations(slider.value.toInt())
+        }
+        contrastSlider.setLabelFormatter { value -> value.toString() }
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -209,11 +252,5 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         }
-    }
-
-    companion object {
-        private const val TAG = "CameraXBasic"
-        private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
 }

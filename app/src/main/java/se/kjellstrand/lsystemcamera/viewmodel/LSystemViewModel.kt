@@ -13,9 +13,10 @@ class LSystemViewModel : ViewModel() {
     private val _lSystem: MutableLiveData<LSystem> = MutableLiveData()
     private val _minWidth: MutableLiveData<Float> = MutableLiveData(1F)
     private val _maxWidth: MutableLiveData<Float> = MutableLiveData(1F)
-    private val _minWidthMod: MutableLiveData<Float> = MutableLiveData(0F)
-    private val _maxWidthMod: MutableLiveData<Float> = MutableLiveData(0F)
+    private val _contrastMod: MutableLiveData<Float> = MutableLiveData(1F)
+    private val _brightnessMod: MutableLiveData<Float> = MutableLiveData(0F)
     private val _iterations: MutableLiveData<Int> = MutableLiveData(2)
+    private val _maxIterations: MutableLiveData<Int> = MutableLiveData(2)
 
     fun setLSystem(lSystem: LSystem) {
         _lSystem.value = lSystem
@@ -25,10 +26,24 @@ class LSystemViewModel : ViewModel() {
         return _lSystem.value
     }
 
+    fun observeLSystem(owner: LifecycleOwner, observer: Observer<LSystem>) {
+        _lSystem.observe(owner, observer)
+    }
+
     fun getIterations() = _iterations.value ?: 2
 
     fun setIterations(iterations: Int) {
-        _iterations.value = iterations
+        if (_iterations.value != iterations) {
+            _iterations.value = iterations
+        }
+    }
+
+    fun getMaxIterations() = _maxIterations.value ?: 2
+
+    fun setMaxIterations(iterations: Int) {
+        if (_maxIterations.value != iterations) {
+            _maxIterations.value = iterations
+        }
     }
 
     fun calculateAndSetMaxIterations(system: LSystem, imageView: ImageView) {
@@ -42,11 +57,17 @@ class LSystemViewModel : ViewModel() {
             )
             minWidth = _minWidth * imageView.width
         }
-        this._iterations.value = iterations
+        setMaxIterations(iterations)
+    }
+
+    fun observeMaxIterations(owner: LifecycleOwner, observer: Observer<Int>) {
+        _iterations.observe(owner, observer)
     }
 
     fun setMinWidth(min: Float) {
-        _minWidth.value = min
+        if (_minWidth.value != min) {
+            _minWidth.value = min
+        }
     }
 
     fun getMinWidth(): Float {
@@ -54,30 +75,32 @@ class LSystemViewModel : ViewModel() {
     }
 
     fun setMaxWidth(max: Float) {
-        _maxWidth.value = max
+        if (_maxWidth.value != max) {
+            _maxWidth.value = max
+        }
     }
 
     fun getMaxWidth(): Float {
         return _maxWidth.value ?: 1f
     }
 
-    fun setMinWidthMod(min: Float) {
-        _minWidthMod.value = min
+    fun setContrastMod(min: Float) {
+        if (_contrastMod.value != min) {
+            _contrastMod.value = min
+        }
     }
 
-    fun getMinWidthMod(): Float {
-        return _minWidthMod.value ?: 1f
+    fun getContrastMod(): Float {
+        return _contrastMod.value ?: 1f
     }
 
-    fun setMaxWidthMod(max: Float) {
-        _maxWidthMod.value = max
+    fun setBrightnessMod(max: Float) {
+        if (_brightnessMod.value != max) {
+            _brightnessMod.value = max
+        }
     }
 
-    fun getMaxWidthMod(): Float {
-        return _maxWidthMod.value ?: 1f
-    }
-
-    fun observeLSystem(owner: LifecycleOwner, observer: Observer<LSystem>) {
-        _lSystem.observe(owner, observer)
+    fun getBrightnessMod(): Float {
+        return _brightnessMod.value ?: 1f
     }
 }

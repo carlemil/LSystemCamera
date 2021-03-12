@@ -8,6 +8,7 @@ import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.buildHullFromPolygon
 import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
+import kotlin.math.pow
 
 class ImageAnalyzer {
 
@@ -17,12 +18,10 @@ class ImageAnalyzer {
         private lateinit var line: MutableList<LSTriple>
 
         fun updateLSystem(
-            model: LSystemViewModel,
-            imageView: ImageView
+            model: LSystemViewModel
         ) {
             model.getLSystem()?.let { system ->
                 line = LSystemGenerator.generatePolygon(system, model.getIterations())
-                model.calculateAndSetMaxIterations(system, imageView)
                 line.distinct()
             }
         }
@@ -101,14 +100,17 @@ class ImageAnalyzer {
 
             val maxWidth = model.getMaxWidth()
             val minWidth = model.getMinWidth()
-            val maxWidthMod = model.getMaxWidthMod()
-            val minWidthMod = model.getMinWidthMod()
+            // 1 == full brightness, 0 == lowest brightness
+            val brightness = 2f.pow(model.getBrightnessMod())
+
+            // 0 == full contrast, max width diff, 1 == no contrast, width is same all over
+            val contrast = (1 - model.getContrastMod()) * (maxWidth + minWidth) / 2f
 
             LSystemGenerator.setLineWidthAccordingToImage(
                 line = line,
                 luminanceData = luminance,
-                minWidth = minWidth + minWidthMod * minWidth * 0.5f,
-                maxWidth = maxWidth + maxWidthMod * maxWidth * 0.05f
+                minWidth = (minWidth + contrast) * brightness,
+                maxWidth = (maxWidth - contrast) * brightness
             )
 
             LSystemGenerator.smoothenWidthOfLine(line)
