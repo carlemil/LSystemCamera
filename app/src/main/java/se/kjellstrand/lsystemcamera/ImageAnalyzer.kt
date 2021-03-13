@@ -36,8 +36,7 @@ class ImageAnalyzer {
             }
 
             if (bitmap == null) {
-                bitmap =
-                    Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
+                bitmap = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
             }
 
             bitmap?.let { bitmap ->

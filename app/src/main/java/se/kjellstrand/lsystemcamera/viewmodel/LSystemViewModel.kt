@@ -1,6 +1,5 @@
 package se.kjellstrand.lsystemcamera.viewmodel
 
-import android.widget.ImageView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
@@ -40,13 +39,13 @@ class LSystemViewModel : ViewModel() {
 
     fun getMaxIterations() = _maxIterations.value ?: 2
 
-    fun setMaxIterations(iterations: Int) {
+    private fun setMaxIterations(iterations: Int) {
         if (_maxIterations.value != iterations) {
             _maxIterations.value = iterations
         }
     }
 
-    fun calculateAndSetMaxIterations(system: LSystem, imageView: ImageView) {
+    fun calculateAndSetMaxIterations(system: LSystem, imageViewWidth: Int) {
         var iterations = 1
         var minWidth = 1F
         while (minWidth >= 1) {
@@ -55,7 +54,7 @@ class LSystemViewModel : ViewModel() {
                 ++iterations,
                 system
             )
-            minWidth = _minWidth * imageView.width
+            minWidth = _minWidth * imageViewWidth
         }
         setMaxIterations(iterations)
     }
