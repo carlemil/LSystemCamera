@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
+import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -48,6 +49,50 @@ class MainActivity : AppCompatActivity() {
 
         requestCameraPermissions()
 
+        LSystem.systems.forEach { system->
+            when(system.name) {
+                "Dragon" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 12
+                }
+                "TwinDragon" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "Fudgeflake" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "Hilbert" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "SierpinskiTriangle" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "SierpinskiCurve" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "SierpinskiSquare" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "Gosper" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "Peano" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+                "Moore" -> {
+                    system.minIterations = 1
+                    system.maxIterations = 2
+                }
+            }
+        }
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 

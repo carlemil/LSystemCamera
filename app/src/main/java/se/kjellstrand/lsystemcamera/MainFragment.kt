@@ -82,10 +82,11 @@ class MainFragment : Fragment() {
             model.setMinWidth(minWidth)
             model.setMaxWidth(maxWidth)
 
-            val maxIterations = model.getMaxIterations()
+            val maxIterations = system.maxIterations //model.getMaxIterations()
             val iterations = (maxIterations / 2).toFloat()
 
             iterationsSlider.value = 2f
+            iterationsSlider.valueFrom = system.minIterations.toFloat()
             iterationsSlider.valueTo = maxIterations.toFloat()
             model.setIterations(iterations.toInt())
             iterationsSlider.value = iterations
