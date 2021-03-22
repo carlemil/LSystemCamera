@@ -6,6 +6,7 @@ import android.widget.ImageView
 import androidx.camera.core.ImageProxy
 import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.buildHullFromPolygon
+import se.kjellstrand.lsystem.getMidPoint
 import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import kotlin.math.pow
@@ -49,30 +50,43 @@ class ImageAnalyzer {
                     val hull = buildHullFromPolygon(scaledLine)
 
                     val c = Canvas(bitmap)
+
+                    // Set style and color for the background
                     val bgPaint = Paint()
                     bgPaint.color = Color.WHITE
                     c.drawRect(0F, 0F, c.width.toFloat(), c.height.toFloat(), bgPaint)
+
+                    // Set style and color for the line
                     val paint = Paint()
                     paint.color = Color.BLACK
                     paint.style = Paint.Style.FILL_AND_STROKE
 
-                    val polyPath = Path()
-                    //polyPath.fillType = Path.FillType.WINDING
-                    polyPath.moveTo(hull[0].x, hull[0].y)
-                    hull.forEach { p ->
-                        polyPath.lineTo(p.x, p.y)
-                    }
-
-                    val matrix = Matrix()
-                    matrix.postScale(imageView.width.toFloat(), imageView.height.toFloat())
-                    polyPath.transform(matrix)
-                    polyPath.close()
-
-                    c.drawPath(polyPath, paint)
+                    c.drawPath(createQuadCurveFromHull(hull, imageView), paint)
                 }
             }
             image.close()
             return bitmap
+        }
+
+        private fun createQuadCurveFromHull(
+            hull: MutableList<LSTriple>,
+            imageView: ImageView
+        ): Path {
+            val path = Path()
+            val polygonInitialPP = getMidPoint(hull[hull.size - 1], hull[hull.size - 2])
+            path.moveTo(polygonInitialPP.x, polygonInitialPP.y)
+
+            for (i in 0 until hull.size) {
+                val quadStartPP = hull[(if (i == 0) hull.size else i) - 1]
+                val nextQuadStartPP = hull[i]
+                val quadEndPP = getMidPoint(quadStartPP, nextQuadStartPP)
+                path.quadTo(quadStartPP.x, quadStartPP.y, quadEndPP.x, quadEndPP.y)
+            }
+            val matrix = Matrix()
+            matrix.postScale(imageView.width.toFloat(), imageView.height.toFloat())
+            path.transform(matrix)
+            path.close()
+            return path
         }
 
         @SuppressLint("UnsafeExperimentalUsageError")
