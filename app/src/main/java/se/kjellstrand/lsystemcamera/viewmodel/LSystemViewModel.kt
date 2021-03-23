@@ -15,9 +15,9 @@ class LSystemViewModel : ViewModel() {
     private val _contrastMod: MutableLiveData<Float> = MutableLiveData(1F)
     private val _brightnessMod: MutableLiveData<Float> = MutableLiveData(0F)
     private val _iterations: MutableLiveData<Int> = MutableLiveData(2)
-    private val _maxIterations: MutableLiveData<Int> = MutableLiveData(2)
 
     fun setLSystem(lSystem: LSystem) {
+        _iterations.value = 2
         _lSystem.value = lSystem
     }
 
@@ -37,29 +37,7 @@ class LSystemViewModel : ViewModel() {
         }
     }
 
-    fun getMaxIterations() = _maxIterations.value ?: 2
-
-    private fun setMaxIterations(iterations: Int) {
-        if (_maxIterations.value != iterations) {
-            _maxIterations.value = iterations
-        }
-    }
-
-    fun calculateAndSetMaxIterations(system: LSystem, imageViewWidth: Int) {
-        var iterations = 1
-        var minWidth = 1F
-        while (minWidth >= 1) {
-            val (_minWidth, _) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                1f,
-                ++iterations,
-                system
-            )
-            minWidth = _minWidth * imageViewWidth
-        }
-        setMaxIterations(iterations)
-    }
-
-    fun observeMaxIterations(owner: LifecycleOwner, observer: Observer<Int>) {
+    fun observeIterations(owner: LifecycleOwner, observer: Observer<Int>) {
         _iterations.observe(owner, observer)
     }
 

@@ -71,30 +71,23 @@ class MainFragment : Fragment() {
 
     private fun updateLSystem() {
         model.getLSystem()?.let { system ->
-            val width = activity?.findViewById<ImageView>(R.id.imageView)?.measuredWidth
-            if (width != null) {
-                model.calculateAndSetMaxIterations(system, width)
-            }
-
             val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
                 1f, model.getIterations(), system
             )
             model.setMinWidth(minWidth)
             model.setMaxWidth(maxWidth)
 
-            val maxIterations = system.maxIterations //model.getMaxIterations()
-            val iterations = (maxIterations / 2).toFloat()
-
             iterationsSlider.value = 2f
             iterationsSlider.valueFrom = system.minIterations.toFloat()
-            iterationsSlider.valueTo = maxIterations.toFloat()
-            model.setIterations(iterations.toInt())
-            iterationsSlider.value = iterations
+            iterationsSlider.valueTo = system.maxIterations.toFloat()
+            val iterations = system.maxIterations / 2
+            model.setIterations(iterations)
+            iterationsSlider.value = iterations.toFloat()
         }
     }
 
     private fun setupMaxIterationsObserver() {
-        model.observeMaxIterations(this, { maxIterations ->
+        model.observeIterations(this, { maxIterations ->
             model.getLSystem()?.let { system ->
                 val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
                     1f, maxIterations, system
