@@ -15,7 +15,7 @@ class CustomAdapter(context: Activity, resouceId: Int, textviewId: Int, list: Li
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val rowItem: RowItem? = getItem(position)
         val rowview: View = layoutInflater.inflate(R.layout.single_line_text_item, null, true)
-        val txtTitle = rowview.findViewById<View>(R.id.title) as TextView
+        val txtTitle = rowview.findViewById<View>(R.id.lsName) as TextView
         txtTitle.text = rowItem?.title
         return rowview
     }

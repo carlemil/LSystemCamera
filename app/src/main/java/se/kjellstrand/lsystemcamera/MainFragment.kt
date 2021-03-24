@@ -47,7 +47,7 @@ class MainFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        spinner = view.findViewById(R.id.system_selector_spinner)
+        spinner = view.findViewById(R.id.systemSelectorSpinner)
         iterationsSlider = view.findViewById(R.id.iterationsSlider)
         contrastSlider = view.findViewById(R.id.contrastSlider)
         brightnessSlider = view.findViewById(R.id.brightnessSlider)
@@ -81,7 +81,7 @@ class MainFragment : Fragment() {
             iterationsSlider.value = 2f
             iterationsSlider.valueFrom = system.minIterations.toFloat()
             iterationsSlider.valueTo = system.maxIterations.toFloat()
-            val iterations = system.maxIterations / 2
+            val iterations = system.maxIterations - 1
             model.setIterations(iterations)
             iterationsSlider.value = iterations.toFloat()
         }
@@ -110,7 +110,7 @@ class MainFragment : Fragment() {
             CustomAdapter(
                 activity,
                 R.layout.single_line_text_item,
-                R.id.title,
+                R.id.lsName,
                 systemsNames.map { name -> RowItem(name) }
             )
         }

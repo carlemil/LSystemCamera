@@ -1,110 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content">
 
-    <Spinner
-        android:id="@+id/system_selector_spinner"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="wrap_content">
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/contrastSliderLeftImage"
-        android:layout_width="@dimen/slider_icon_size"
-        android:layout_height="@dimen/slider_icon_size"
-        android:layout_margin="8dp"
-        android:src="@drawable/same_width"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/system_selector_spinner" />
+        <Spinner
+            android:id="@+id/systemSelectorSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/contrastSliderRightImage"
-        android:layout_width="@dimen/slider_icon_size"
-        android:layout_height="@dimen/slider_icon_size"
-        android:layout_margin="8dp"
-        android:src="@drawable/normal"
-        app:layout_constraintBottom_toBottomOf="@+id/contrastSliderLeftImage"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/contrastSliderLeftImage" />
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/contrastSliderText"
+            style="@style/TextAppearance.AppCompat.Body2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/one"
+            android:text="@string/contrastSliderText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/systemSelectorSpinner" />
 
-    <com.google.android.material.slider.Slider
-        android:id="@+id/contrastSlider"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:value="1.0"
-        android:valueFrom="0.0"
-        android:valueTo="1.0"
-        app:layout_constraintBottom_toBottomOf="@+id/contrastSliderLeftImage"
-        app:layout_constraintEnd_toStartOf="@+id/contrastSliderRightImage"
-        app:layout_constraintStart_toEndOf="@id/contrastSliderLeftImage"
-        app:layout_constraintTop_toTopOf="@+id/contrastSliderLeftImage" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/contrastSlider"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/one"
+            android:layout_marginRight="@dimen/one"
+            android:layout_marginBottom="@dimen/one"
+            android:value="1.0"
+            android:valueFrom="0.0"
+            android:valueTo="1.0"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/contrastSliderText" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/brightnessSliderLeftImage"
-        android:layout_width="@dimen/slider_icon_size"
-        android:layout_height="@dimen/slider_icon_size"
-        android:layout_margin="8dp"
-        android:src="@drawable/thinn"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/contrastSliderLeftImage" />
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/brightnessSliderText"
+            style="@style/TextAppearance.AppCompat.Body2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/one"
+            android:text="@string/brightnessSliderText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/contrastSlider" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/brightnessSliderRightImage"
-        android:layout_width="@dimen/slider_icon_size"
-        android:layout_height="@dimen/slider_icon_size"
-        android:layout_margin="8dp"
-        android:src="@drawable/normal"
-        app:layout_constraintBottom_toBottomOf="@+id/brightnessSliderLeftImage"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/brightnessSliderLeftImage" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/brightnessSlider"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/one"
+            android:layout_marginRight="@dimen/one"
+            android:layout_marginBottom="@dimen/one"
+            android:value="0.0"
+            android:valueFrom="-2.0"
+            android:valueTo="2.0"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/brightnessSliderText" />
 
-    <com.google.android.material.slider.Slider
-        android:id="@+id/brightnessSlider"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:value="0.0"
-        android:valueFrom="-2.0"
-        android:valueTo="2.0"
-        app:layout_constraintBottom_toBottomOf="@+id/brightnessSliderLeftImage"
-        app:layout_constraintEnd_toStartOf="@+id/brightnessSliderRightImage"
-        app:layout_constraintStart_toEndOf="@id/brightnessSliderLeftImage"
-        app:layout_constraintTop_toTopOf="@+id/brightnessSliderLeftImage" />
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/iterationsSliderText"
+            style="@style/TextAppearance.AppCompat.Body2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/one"
+            android:text="@string/iterationsSliderText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/brightnessSlider" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iterationsSliderLeftImage"
-        android:layout_width="@dimen/slider_icon_size"
-        android:layout_height="@dimen/slider_icon_size"
-        android:layout_margin="8dp"
-        android:src="@drawable/normal"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/brightnessSliderLeftImage" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/iterationsSlider"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/one"
+            android:layout_marginRight="@dimen/one"
+            android:layout_marginBottom="@dimen/one"
+            android:stepSize="1"
+            android:value="2"
+            android:valueFrom="1"
+            android:valueTo="3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/iterationsSliderText" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iterationsSliderRightImage"
-        android:layout_width="@dimen/slider_icon_size"
-        android:layout_height="@dimen/slider_icon_size"
-        android:layout_margin="8dp"
-        android:src="@drawable/complex"
-        app:layout_constraintBottom_toBottomOf="@+id/iterationsSliderLeftImage"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/iterationsSliderLeftImage" />
-
-    <com.google.android.material.slider.Slider
-        android:id="@+id/iterationsSlider"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:stepSize="1"
-        android:value="2"
-        android:valueFrom="1"
-        android:valueTo="3"
-        app:layout_constraintBottom_toBottomOf="@+id/iterationsSliderLeftImage"
-        app:layout_constraintEnd_toStartOf="@+id/iterationsSliderRightImage"
-        app:layout_constraintStart_toEndOf="@id/iterationsSliderLeftImage"
-        app:layout_constraintTop_toTopOf="@+id/iterationsSliderLeftImage" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
