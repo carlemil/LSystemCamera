@@ -61,6 +61,9 @@ class ImageAnalyzer {
                     paint.color = Color.BLACK
                     paint.style = Paint.Style.FILL_AND_STROKE
 
+                    // Measure performance impact and decide if we should keep isAntiAlias
+                    paint.isAntiAlias = true
+
                     c.drawPath(createQuadCurveFromHull(hull, imageView), paint)
                 }
             }
