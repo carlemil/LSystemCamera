@@ -5,16 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.ImageView
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.slider.Slider
 import se.kjellstrand.lsystem.LSystemGenerator
+import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.lsystemcamera.view.CustomAdapter
 import se.kjellstrand.lsystemcamera.view.RowItem
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
+import kotlin.math.pow
 
 class MainFragment : Fragment() {
 
@@ -72,7 +73,7 @@ class MainFragment : Fragment() {
     private fun updateLSystem() {
         model.getLSystem()?.let { system ->
             val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                1f, model.getIterations(), system
+                model.getIterations(), system
             )
             model.setMinWidth(minWidth)
             model.setMaxWidth(maxWidth)
@@ -85,17 +86,23 @@ class MainFragment : Fragment() {
             iterationsSlider.value = iterations.toFloat()
         }
     }
-
     private fun setupMaxIterationsObserver() {
         model.observeIterations(this, { maxIterations ->
             model.getLSystem()?.let { system ->
                 val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
-                    1f, maxIterations, system
+                    maxIterations, system
                 )
                 model.setMinWidth(minWidth)
                 model.setMaxWidth(maxWidth)
             }
         })
+    }
+
+    // Used when testing the min and max const values in the LSystem lib
+    private fun getRecommendedMinAndMaxWidth(iteration: Int, def: LSystem): LSTriple {
+        val maxWidth = (1 / 1.45.pow(iteration)) * 0.1
+        val minWidth = maxWidth / 10.0
+        return LSTriple(minWidth.toFloat(), maxWidth.toFloat(), 1F)
     }
 
     private fun inflateSystemNameSpinner(systemsNames: List<String>) {

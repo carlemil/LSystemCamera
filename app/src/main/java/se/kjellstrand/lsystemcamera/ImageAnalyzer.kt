@@ -128,7 +128,7 @@ class ImageAnalyzer {
 
             LSystemGenerator.smoothenWidthOfLine(line)
 
-            val outputSideBuffer = 0.02f
+            val outputSideBuffer = maxWidth + 0.02f
 
             LSystemGenerator.addSideBuffer(outputSideBuffer, line)
 
