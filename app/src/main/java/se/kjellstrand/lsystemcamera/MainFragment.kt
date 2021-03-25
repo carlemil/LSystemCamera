@@ -86,6 +86,7 @@ class MainFragment : Fragment() {
             iterationsSlider.value = iterations.toFloat()
         }
     }
+
     private fun setupMaxIterationsObserver() {
         model.observeIterations(this, { maxIterations ->
             model.getLSystem()?.let { system ->

@@ -3,4 +3,5 @@
     <string name="contrastSliderText">Contrast</string>
     <string name="iterationsSliderText">Complexity</string>
     <string name="brightnessSliderText">Brightness</string>
+    <string name="share">Share image</string>
 </resources>

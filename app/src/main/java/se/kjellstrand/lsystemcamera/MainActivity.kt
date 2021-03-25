@@ -1,12 +1,16 @@
 package se.kjellstrand.lsystemcamera
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.Surface
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -18,12 +22,16 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.android.synthetic.main.activity_main.*
-import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,6 +58,59 @@ class MainActivity : AppCompatActivity() {
         requestCameraPermissions()
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.options_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle item selection
+        return when (item.itemId) {
+            R.id.share -> {
+                bitmap?.let { shareImage(it) }
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun shareImage(bitmap: Bitmap) {
+        val imageView = "imageview"
+        val imageName = "image.png"
+        // save bitmap to cache directory
+        try {
+            val cachePath = File(cacheDir, imageView)
+            // don't forget to make the directory
+            cachePath.mkdirs()
+            // overwrites this image every time
+            val stream = FileOutputStream("$cachePath/$imageName")
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            stream.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        val imagePath = File(cacheDir, imageView)
+        val newFile = File(imagePath, imageName)
+        val contentUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", newFile)
+        if (contentUri != null) {
+            val shareIntent = Intent()
+            val chooser = Intent.createChooser(shareIntent, getString(R.string.share))
+            val resInfoList = this.packageManager.queryIntentActivities(chooser, PackageManager.MATCH_DEFAULT_ONLY)
+            for (resolveInfo in resInfoList) {
+                val packageName = resolveInfo.activityInfo.packageName
+                grantUriPermission(packageName, contentUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            shareIntent.action = Intent.ACTION_SEND
+            // temp permission for receiving app to read this file
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            shareIntent.setDataAndType(contentUri, contentResolver?.getType(contentUri))
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri)
+            shareIntent.type = "image/png"
+            startActivity(Intent.createChooser(shareIntent, "Choose an app"))
+        }
     }
 
     @androidx.camera.core.ExperimentalGetImage
