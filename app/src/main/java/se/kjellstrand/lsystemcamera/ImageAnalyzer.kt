@@ -15,6 +15,8 @@ class ImageAnalyzer {
 
     companion object {
         private var bitmap: Bitmap? = null
+        private var bitmapDoubleBuffer1: Bitmap? = null
+        private var bitmapDoubleBuffer2: Bitmap? = null
         private var luminance: Array<FloatArray> = Array(0) { FloatArray(0) }
         private lateinit var line: MutableList<LSTriple>
 
@@ -36,8 +38,14 @@ class ImageAnalyzer {
                 luminance = Array(image.height) { FloatArray(image.height) }
             }
 
-            if (bitmap == null) {
-                bitmap = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
+            if (bitmapDoubleBuffer1 == null || bitmapDoubleBuffer2 == null) {
+                bitmapDoubleBuffer1 = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
+                bitmapDoubleBuffer2 = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
+            }
+            bitmap = if (bitmap == bitmapDoubleBuffer1) {
+                bitmapDoubleBuffer2
+            } else {
+                bitmapDoubleBuffer1
             }
 
             bitmap?.let { bitmap ->
