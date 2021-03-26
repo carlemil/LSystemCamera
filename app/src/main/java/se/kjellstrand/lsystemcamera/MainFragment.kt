@@ -103,7 +103,7 @@ class MainFragment : Fragment() {
     private fun getRecommendedMinAndMaxWidth(iteration: Int, def: LSystem): LSTriple {
         val maxWidth = (1 / 1.45.pow(iteration)) * 0.1
         val minWidth = maxWidth / 10.0
-        return LSTriple(minWidth.toFloat(), maxWidth.toFloat(), 1F)
+        return LSTriple(minWidth, maxWidth, 1.0)
     }
 
     private fun inflateSystemNameSpinner(systemsNames: List<String>) {
@@ -138,12 +138,12 @@ class MainFragment : Fragment() {
 
     private fun inflateBrightnessAndContrastSliders() {
         contrastSlider.addOnChangeListener { slider, _, _ ->
-            model.setContrastMod(slider.value)
+            model.setContrastMod(slider.value.toDouble())
         }
         contrastSlider.setLabelFormatter { value -> value.toString() }
 
         brightnessSlider.addOnChangeListener { slider, _, _ ->
-            model.setBrightnessMod(slider.value)
+            model.setBrightnessMod(slider.value.toDouble())
         }
         brightnessSlider.setLabelFormatter { value -> value.toString() }
     }

@@ -17,7 +17,7 @@ class ImageAnalyzer {
         private var bitmap: Bitmap? = null
         private var bitmapDoubleBuffer1: Bitmap? = null
         private var bitmapDoubleBuffer2: Bitmap? = null
-        private var luminance: Array<FloatArray> = Array(0) { FloatArray(0) }
+        private var luminance: Array<DoubleArray> = Array(0) { DoubleArray(0) }
         private lateinit var line: MutableList<LSTriple>
 
         fun updateLSystem(
@@ -35,7 +35,7 @@ class ImageAnalyzer {
             model: LSystemViewModel
         ): Bitmap? {
             if (luminance.size != image.width || luminance[0].size != image.height) {
-                luminance = Array(image.height) { FloatArray(image.height) }
+                luminance = Array(image.height) { DoubleArray(image.height) }
             }
 
             if (bitmapDoubleBuffer1 == null || bitmapDoubleBuffer2 == null) {
@@ -85,13 +85,13 @@ class ImageAnalyzer {
         ): Path {
             val path = Path()
             val polygonInitialPP = getMidPoint(hull[hull.size - 1], hull[hull.size - 2])
-            path.moveTo(polygonInitialPP.x, polygonInitialPP.y)
+            path.moveTo(polygonInitialPP.x.toFloat(), polygonInitialPP.y.toFloat())
 
             for (i in 0 until hull.size) {
                 val quadStartPP = hull[(if (i == 0) hull.size else i) - 1]
                 val nextQuadStartPP = hull[i]
                 val quadEndPP = getMidPoint(quadStartPP, nextQuadStartPP)
-                path.quadTo(quadStartPP.x, quadStartPP.y, quadEndPP.x, quadEndPP.y)
+                path.quadTo(quadStartPP.x.toFloat(), quadStartPP.y.toFloat(), quadEndPP.x.toFloat(), quadEndPP.y.toFloat())
             }
             val matrix = Matrix()
             matrix.postScale(imageView.width.toFloat(), imageView.height.toFloat())
@@ -103,7 +103,7 @@ class ImageAnalyzer {
         @SuppressLint("UnsafeExperimentalUsageError")
         fun updateLSystem(
             image: ImageProxy,
-            luminance: Array<FloatArray>,
+            luminance: Array<DoubleArray>,
             model: LSystemViewModel,
             line: MutableList<LSTriple>
         ): MutableList<LSTriple> {
@@ -116,7 +116,7 @@ class ImageAnalyzer {
             for (y in hRange) {
                 for (x in vRange) {
                     val byte = (plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE)
-                    val f = byte.toFloat() / 256f
+                    val f = byte.toDouble() / 256.0
                     luminance[image.height - y - 1][x - vhDiff] = 1 - if (f < 0) f + 1 else f
                 }
             }
@@ -125,7 +125,7 @@ class ImageAnalyzer {
             val maxWidth = model.getMaxWidth()
             val minWidth = model.getMinWidth()
             // 1 == full brightness, 0 == lowest brightness
-            val brightness = 2f.pow(model.getBrightnessMod())
+            val brightness = 2.0.pow(model.getBrightnessMod())
 
             // 0 == full contrast, max width diff, 1 == no contrast, width is same all over
             val contrast = (1 - model.getContrastMod()) * (maxWidth + minWidth) / 2f

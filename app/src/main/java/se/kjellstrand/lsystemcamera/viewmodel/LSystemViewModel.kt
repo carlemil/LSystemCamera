@@ -10,10 +10,10 @@ import se.kjellstrand.lsystem.model.LSystem
 class LSystemViewModel : ViewModel() {
 
     private val _lSystem: MutableLiveData<LSystem> = MutableLiveData()
-    private val _minWidth: MutableLiveData<Float> = MutableLiveData(1F)
-    private val _maxWidth: MutableLiveData<Float> = MutableLiveData(1F)
-    private val _contrastMod: MutableLiveData<Float> = MutableLiveData(1F)
-    private val _brightnessMod: MutableLiveData<Float> = MutableLiveData(0F)
+    private val _minWidth: MutableLiveData<Double> = MutableLiveData(1.0)
+    private val _maxWidth: MutableLiveData<Double> = MutableLiveData(1.0)
+    private val _contrastMod: MutableLiveData<Double> = MutableLiveData(1.0)
+    private val _brightnessMod: MutableLiveData<Double> = MutableLiveData(0.0)
     private val _iterations: MutableLiveData<Int> = MutableLiveData(2)
 
     fun setLSystem(lSystem: LSystem) {
@@ -41,43 +41,43 @@ class LSystemViewModel : ViewModel() {
         _iterations.observe(owner, observer)
     }
 
-    fun setMinWidth(min: Float) {
+    fun setMinWidth(min: Double) {
         if (_minWidth.value != min) {
             _minWidth.value = min
         }
     }
 
-    fun getMinWidth(): Float {
-        return _minWidth.value ?: 1f
+    fun getMinWidth(): Double {
+        return _minWidth.value ?: 1.0
     }
 
-    fun setMaxWidth(max: Float) {
+    fun setMaxWidth(max: Double) {
         if (_maxWidth.value != max) {
             _maxWidth.value = max
         }
     }
 
-    fun getMaxWidth(): Float {
-        return _maxWidth.value ?: 1f
+    fun getMaxWidth(): Double {
+        return _maxWidth.value ?: 1.0
     }
 
-    fun setContrastMod(min: Float) {
+    fun setContrastMod(min: Double) {
         if (_contrastMod.value != min) {
             _contrastMod.value = min
         }
     }
 
-    fun getContrastMod(): Float {
-        return _contrastMod.value ?: 1f
+    fun getContrastMod(): Double {
+        return _contrastMod.value ?: 1.0
     }
 
-    fun setBrightnessMod(max: Float) {
+    fun setBrightnessMod(max: Double) {
         if (_brightnessMod.value != max) {
             _brightnessMod.value = max
         }
     }
 
-    fun getBrightnessMod(): Float {
-        return _brightnessMod.value ?: 1f
+    fun getBrightnessMod(): Double {
+        return _brightnessMod.value ?: 1.0
     }
 }
