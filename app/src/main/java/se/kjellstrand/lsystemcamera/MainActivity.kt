@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity() {
         // Handle item selection
         return when (item.itemId) {
             R.id.share -> {
-                bitmap?.let { shareImage(it) }
+                bitmap?.let { shareImage(Bitmap.createBitmap(it)) }
                 true
             }
             else -> super.onOptionsItemSelected(item)
