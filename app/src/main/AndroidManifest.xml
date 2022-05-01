@@ -13,8 +13,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LSystemCamera">
         <activity
-            android:name=".MainActivity"
-            android:screenOrientation="portrait">
+            android:name="se.kjellstrand.lsystemcamera.MainActivity"
+            android:screenOrientation="portrait"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

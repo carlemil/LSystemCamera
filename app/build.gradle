@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 32
 
     defaultConfig {
         applicationId "se.kjellstrand.lsystemcamera"
         minSdkVersion 28
-        targetSdkVersion 30
+        targetSdkVersion 32
         versionCode 3
         versionName "1.1-SNAPSHOT"
 
@@ -33,23 +33,23 @@ android {
 }
 
 dependencies {
-    def camerax_version = "1.1.0-alpha03"
-    def camera_view_version = "1.0.0-alpha23"
-    def activity_version = "1.2.2"
-    def fragment_version = "1.3.2"
+    def camerax_version = "1.1.0-beta03"
+    def camera_view_version = "1.1.0-beta03"
+    def activity_version = "1.4.0"
+    def fragment_version = "1.4.1"
 
     //implementation "com.github.carlemil:LSystems:master-SNAPSHOT"
-    implementation "se.kjellstrand:lsystem:1.3.1"
+    //implementation "se.kjellstrand:se.kjellstrand.lsystem:1.3.1"
 
-    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'com.google.android.material:material:1.5.0'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1'
 
-    implementation 'androidx.core:core-ktx:1.3.2'
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'androidx.core:core-ktx:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
     implementation "androidx.activity:activity-ktx:$activity_version"
     implementation "androidx.fragment:fragment-ktx:$fragment_version"
     // CameraX core library using camera2 implementation
@@ -60,6 +60,6 @@ dependencies {
     implementation "androidx.camera:camera-view:$camera_view_version"
 
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }

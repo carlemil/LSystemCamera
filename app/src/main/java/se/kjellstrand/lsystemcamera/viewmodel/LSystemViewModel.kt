@@ -4,7 +4,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
-import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.model.LSystem
 
 class LSystemViewModel : ViewModel() {

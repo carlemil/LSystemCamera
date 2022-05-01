@@ -64,10 +64,10 @@ class MainFragment : Fragment() {
     }
 
     private fun setupLSystemObserver() {
-        model.observeLSystem(this, {
+        model.observeLSystem(this) {
             ImageAnalyzer.updateLSystem(model)
             updateLSystem()
-        })
+        }
     }
 
     private fun updateLSystem() {
@@ -88,7 +88,7 @@ class MainFragment : Fragment() {
     }
 
     private fun setupMaxIterationsObserver() {
-        model.observeIterations(this, { maxIterations ->
+        model.observeIterations(this) { maxIterations ->
             model.getLSystem()?.let { system ->
                 val (minWidth, maxWidth) = LSystemGenerator.getRecommendedMinAndMaxWidth(
                     maxIterations, system
@@ -96,7 +96,7 @@ class MainFragment : Fragment() {
                 model.setMinWidth(minWidth)
                 model.setMaxWidth(maxWidth)
             }
-        })
+        }
     }
 
     // Used when testing the min and max const values in the LSystem lib
