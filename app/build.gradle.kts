@@ -8,8 +8,8 @@ plugins {
 }
 
 // Kotlin is compiled by AGP's built-in support; jvmTarget follows compileOptions.targetCompatibility.
-val appVersionCode = 3
-val appVersionName = "2.0.0-candidate-001"
+val appVersionCode = 4
+val appVersionName = "2.0.0"
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
