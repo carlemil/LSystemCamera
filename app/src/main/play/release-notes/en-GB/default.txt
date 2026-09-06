@@ -1,0 +1,1 @@
+Rebuilt for modern Android: new Material You design, dark mode, faster rendering, updated camera pipeline.

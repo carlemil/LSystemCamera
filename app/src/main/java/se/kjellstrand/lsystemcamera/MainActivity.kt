@@ -1,207 +1,84 @@
 package se.kjellstrand.lsystemcamera
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.Surface
-import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.camera.lifecycle.awaitInstance
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.app.ShareCompat
 import androidx.core.content.FileProvider
-import com.google.common.util.concurrent.ListenableFuture
-import kotlinx.android.synthetic.main.activity_main.*
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
+class MainActivity : ComponentActivity() {
 
-class MainActivity : AppCompatActivity() {
+    private val vm: LSystemViewModel by viewModels()
+    private var hasCamera by mutableStateOf(false)
+    private var bound = false
 
-    companion object {
-        private const val TAG = "CameraXBasic"
-
-        private const val CAMERA_IMAGE_SIZE = 200
-        private const val REQUEST_CODE_PERMISSIONS = 10
-
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
-    }
-
-    private lateinit var cameraExecutor: ExecutorService
-    private val model: LSystemViewModel by viewModels()
-    private val analyzerExecutor = Executors.newSingleThreadExecutor()
-
-    private var bitmap: Bitmap? = null
-
-    @androidx.camera.core.ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        requestCameraPermissions()
-
-        cameraExecutor = Executors.newSingleThreadExecutor()
+        enableEdgeToEdge()
+        setContent { LSystemTheme { MainScreen(vm, hasCamera, onShare = ::share) } }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater: MenuInflater = menuInflater
-        inflater.inflate(R.menu.overflow_menu, menu)
-        return true
+    // Covers first launch, returning from the permission dialog, and returning from Settings.
+    override fun onResume() {
+        super.onResume()
+        hasCamera = checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        if (hasCamera) bindCamera()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle item selection
-        return when (item.itemId) {
-            R.id.share -> {
-                bitmap?.let { shareImage(Bitmap.createBitmap(it)) }
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    private fun bindCamera() {
+        if (bound) return
+        bound = true
+        lifecycleScope.launch {
+            val provider = ProcessCameraProvider.awaitInstance(this@MainActivity)
+            val analysis = ImageAnalysis.Builder()
+                .setResolutionSelector(
+                    ResolutionSelector.Builder()
+                        .setResolutionStrategy(
+                            ResolutionStrategy(
+                                Size(ANALYSIS_SIZE, ANALYSIS_SIZE),
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER
+                            )
+                        )
+                        .build()
+                )
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+            analysis.setAnalyzer(vm.executor, vm.analyzer)
+            provider.unbindAll()
+            provider.bindToLifecycle(this@MainActivity, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
         }
     }
 
-    private fun shareImage(bitmap: Bitmap) {
-        val imageView = "imageview"
-        val imageName = "image.png"
-        // save bitmap to cache directory
-        try {
-            val cachePath = File(cacheDir, imageView)
-            // don't forget to make the directory
-            cachePath.mkdirs()
-            // overwrites this image every time
-            val stream = FileOutputStream("$cachePath/$imageName")
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            stream.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        val imagePath = File(cacheDir, imageView)
-        val newFile = File(imagePath, imageName)
-        val contentUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", newFile)
-        if (contentUri != null) {
-            val shareIntent = Intent()
-            val chooser = Intent.createChooser(shareIntent, getString(R.string.share))
-            val resInfoList = this.packageManager.queryIntentActivities(chooser, PackageManager.MATCH_DEFAULT_ONLY)
-            for (resolveInfo in resInfoList) {
-                val packageName = resolveInfo.activityInfo.packageName
-                grantUriPermission(packageName, contentUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            shareIntent.action = Intent.ACTION_SEND
-            // temp permission for receiving app to read this file
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            shareIntent.setDataAndType(contentUri, contentResolver?.getType(contentUri))
-            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri)
-            shareIntent.type = "image/png"
-            startActivity(Intent.createChooser(shareIntent, "Choose an app"))
-        }
+    private fun share() {
+        val bitmap = vm.frame.value ?: return
+        val file = File(cacheDir, "imageview").apply { mkdirs() }.resolve("image.png")
+        file.outputStream().use { Bitmap.createBitmap(bitmap).compress(Bitmap.CompressFormat.PNG, 100, it) }
+        ShareCompat.IntentBuilder(this)
+            .setType("image/png")
+            .setStream(FileProvider.getUriForFile(this, "$packageName.fileprovider", file))
+            .startChooser()
     }
 
-    @androidx.camera.core.ExperimentalGetImage
-    private fun requestCameraPermissions() {
-        if (allPermissionsGranted()) {
-            startCamera(CAMERA_IMAGE_SIZE)
-        } else {
-            ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-            )
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.P)
-    @androidx.camera.core.ExperimentalGetImage
-    private fun startCamera(size: Int) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-
-        cameraProviderFuture.addListener(Runnable {
-            // Used to bind the lifecycle of cameras to the lifecycle owner
-            handleCamera(cameraProviderFuture, size)
-
-        }, ContextCompat.getMainExecutor(this))
-    }
-
-    private fun handleCamera(
-        cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
-        size: Int
-    ) {
-        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-        // Preview
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(viewFinder.surfaceProvider)
-        }
-
-        // Select back camera as a default
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-        val imageAnalysis = ImageAnalysis.Builder()
-            .setTargetResolution(Size(size, size))
-            .setTargetRotation(Surface.ROTATION_0) // TODO Figure out why this is broken and do not work.
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
-
-        imageAnalysis.setAnalyzer(analyzerExecutor, { image ->
-            bitmap = ImageAnalyzer.analyzeImage(image, imageView, model)
-            runOnUiThread {
-                imageView.setImageBitmap(bitmap)
-            }
-        })
-
-        try {
-            // Unbind use cases before rebinding
-            cameraProvider.unbindAll()
-
-            // Bind use cases to camera
-            cameraProvider.bindToLifecycle(this, cameraSelector, imageAnalysis, preview)
-
-        } catch (exc: Exception) {
-            Log.e(TAG, "Use case binding failed", exc)
-        }
-    }
-
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor.shutdown()
-    }
-
-    @androidx.camera.core.ExperimentalGetImage
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                startCamera(CAMERA_IMAGE_SIZE)
-            } else {
-                Toast.makeText(
-                    this,
-                    "Permissions not granted by the user.",
-                    Toast.LENGTH_SHORT
-                ).show()
-                finish()
-            }
-        }
+    private companion object {
+        const val ANALYSIS_SIZE = 200
     }
 }

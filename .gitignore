@@ -14,3 +14,9 @@
 .cxx
 local.properties
 .idea/
+keystore.properties
+play-account.json
+*.jks
+*.keystore
+app/release/
+.kotlin/

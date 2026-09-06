@@ -3,12 +3,14 @@ package se.kjellstrand.lsystem
 import se.kjellstrand.lsystem.model.LSTriple
 import kotlin.math.*
 
-var leftHull = mutableListOf<LSTriple>()
-var rightHull = mutableListOf<LSTriple>()
+// ponytail: module-level scratch buffers reused across frames; one renderer on one analyzer
+// thread. Move into a class if a second caller ever appears.
+private var leftHull = mutableListOf<LSTriple>()
+private var rightHull = mutableListOf<LSTriple>()
 
 fun buildHullFromPolygon(ppList: List<LSTriple>): MutableList<LSTriple> {
-    // Only create new left and right hulls if(leftHull.size != ppList.size -1)
-    if (leftHull.size != ppList.size - 1) {
+    // Reallocate only when the polyline length changes (the loop below fills size - 2 entries).
+    if (leftHull.size != ppList.size - 2) {
         leftHull = mutableListOf()
         rightHull = mutableListOf()
         // Initialize the left and right hull lists

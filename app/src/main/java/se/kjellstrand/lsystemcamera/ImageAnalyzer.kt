@@ -1,149 +1,120 @@
 package se.kjellstrand.lsystemcamera
 
-import android.annotation.SuppressLint
-import android.graphics.*
-import android.widget.ImageView
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
 import androidx.camera.core.ImageProxy
+import androidx.core.graphics.createBitmap
 import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.buildHullFromPolygon
 import se.kjellstrand.lsystem.getMidPoint
 import se.kjellstrand.lsystem.model.LSTriple
-import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
+import se.kjellstrand.lsystem.model.LSystem
+import se.kjellstrand.lsystemcamera.viewmodel.UiState
+import kotlin.math.min
 import kotlin.math.pow
 
+/**
+ * Turns one camera frame into one rendered bitmap. Single-threaded: only ever called from
+ * the analyzer executor. Double-buffered so the UI never reads the bitmap being drawn.
+ */
 class ImageAnalyzer {
 
-    companion object {
-        private var bitmap: Bitmap? = null
-        private var bitmapDoubleBuffer1: Bitmap? = null
-        private var bitmapDoubleBuffer2: Bitmap? = null
-        private var luminance: Array<DoubleArray> = Array(0) { DoubleArray(0) }
-        private lateinit var line: MutableList<LSTriple>
+    private val buffers = arrayOf(createBitmap(SIZE, SIZE), createBitmap(SIZE, SIZE))
+    private var current = 0
+    private var luminance: Array<DoubleArray> = emptyArray()
 
-        fun updateLSystem(
-            model: LSystemViewModel
-        ) {
-            model.getLSystem()?.let { system ->
-                line = LSystemGenerator.generatePolygon(system, model.getIterations())
-                line.distinct()
-            }
+    private var line: MutableList<LSTriple> = mutableListOf()
+    private var cachedSystem: LSystem? = null
+    private var cachedIterations = -1
+    private var minWidth = 0.0
+    private var maxWidth = 0.0
+
+    private val bgPaint = Paint().apply { color = Color.WHITE }
+    private val linePaint = Paint().apply {
+        color = Color.BLACK
+        style = Paint.Style.FILL_AND_STROKE
+        isAntiAlias = true
+    }
+    private val toPixels = Matrix().apply { postScale(SIZE.toFloat(), SIZE.toFloat()) }
+
+    fun analyze(image: ImageProxy, state: UiState): Bitmap {
+        if (state.system !== cachedSystem || state.iterations != cachedIterations) {
+            cachedSystem = state.system
+            cachedIterations = state.iterations
+            val (min, max) = LSystemGenerator.getRecommendedMinAndMaxWidth(state.iterations, state.system)
+            minWidth = min
+            maxWidth = max
+            line = LSystemGenerator.generatePolygon(state.system, state.iterations).distinct().toMutableList()
+            LSystemGenerator.addSideBuffer(maxWidth + 0.02, line)
         }
+        readLuminance(image)
 
-        fun analyzeImage(
-            image: ImageProxy,
-            imageView: ImageView,
-            model: LSystemViewModel
-        ): Bitmap? {
-            if (luminance.size != image.width || luminance[0].size != image.height) {
-                luminance = Array(image.height) { DoubleArray(image.height) }
-            }
+        // brightness: 1 == neutral. contrast: 1 == full width range, 0 == uniform width.
+        val brightness = 2.0.pow(state.brightness.toDouble())
+        val contrast = (1 - state.contrast) * (maxWidth + minWidth) / 2
+        LSystemGenerator.setLineWidthAccordingToImage(
+            line = line,
+            luminanceData = luminance,
+            minWidth = (minWidth + contrast) * brightness,
+            maxWidth = (maxWidth - contrast) * brightness
+        )
+        LSystemGenerator.smoothenWidthOfLine(line)
 
-            if (bitmapDoubleBuffer1 == null || bitmapDoubleBuffer2 == null) {
-                bitmapDoubleBuffer1 = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
-                bitmapDoubleBuffer2 = Bitmap.createBitmap(imageView.width, imageView.height, Bitmap.Config.ARGB_8888)
-            }
-            bitmap = if (bitmap == bitmapDoubleBuffer1) {
-                bitmapDoubleBuffer2
-            } else {
-                bitmapDoubleBuffer1
-            }
+        current = 1 - current
+        val bitmap = buffers[current]
+        val canvas = Canvas(bitmap)
+        canvas.drawRect(0f, 0f, SIZE.toFloat(), SIZE.toFloat(), bgPaint)
+        canvas.drawPath(quadPath(buildHullFromPolygon(line)), linePaint)
+        return bitmap
+    }
 
-            bitmap?.let { bitmap ->
-                model.getLSystem()?.let { system ->
-                    line = LSystemGenerator.generatePolygon(system, model.getIterations())
-                    line = line.distinct() as MutableList<LSTriple>
-
-                    val scaledLine = updateLSystem(image, luminance, model, line)
-
-                    val hull = buildHullFromPolygon(scaledLine)
-
-                    val c = Canvas(bitmap)
-
-                    // Set style and color for the background
-                    val bgPaint = Paint()
-                    bgPaint.color = Color.WHITE
-                    c.drawRect(0F, 0F, c.width.toFloat(), c.height.toFloat(), bgPaint)
-
-                    // Set style and color for the line
-                    val paint = Paint()
-                    paint.color = Color.BLACK
-                    paint.style = Paint.Style.FILL_AND_STROKE
-
-                    // Measure performance impact and decide if we should keep isAntiAlias
-                    paint.isAntiAlias = true
-
-                    c.drawPath(createQuadCurveFromHull(hull, imageView), paint)
+    /**
+     * Center-cropped square of the Y plane, rotated to the display orientation, inverted so
+     * dark == 1. `luminance[sx][sy]` is indexed in screen space. The portrait lock is ignored on
+     * large screens from Android 17 (targetSdk 37), so the rotation is read per frame.
+     */
+    private fun readLuminance(image: ImageProxy) {
+        val side = min(image.width, image.height)
+        if (luminance.size != side) luminance = Array(side) { DoubleArray(side) }
+        val plane = image.planes[0]
+        val buffer = plane.buffer
+        val xOffset = (image.width - side) / 2
+        val yOffset = (image.height - side) / 2
+        val rotation = image.imageInfo.rotationDegrees
+        val last = side - 1
+        for (cy in 0 until side) {
+            val row = (cy + yOffset) * plane.rowStride + xOffset * plane.pixelStride
+            for (cx in 0 until side) {
+                val value = 1 - (buffer.get(row + cx * plane.pixelStride).toInt() and 0xFF) / 256.0
+                when (rotation) {
+                    90 -> luminance[last - cy][cx] = value
+                    180 -> luminance[last - cx][last - cy] = value
+                    270 -> luminance[cy][last - cx] = value
+                    else -> luminance[cx][cy] = value
                 }
             }
-            image.close()
-            return bitmap
         }
+    }
 
-        private fun createQuadCurveFromHull(
-            hull: MutableList<LSTriple>,
-            imageView: ImageView
-        ): Path {
-            val path = Path()
-            val polygonInitialPP = getMidPoint(hull[hull.size - 1], hull[hull.size - 2])
-            path.moveTo(polygonInitialPP.x.toFloat(), polygonInitialPP.y.toFloat())
-
-            for (i in 0 until hull.size) {
-                val quadStartPP = hull[(if (i == 0) hull.size else i) - 1]
-                val nextQuadStartPP = hull[i]
-                val quadEndPP = getMidPoint(quadStartPP, nextQuadStartPP)
-                path.quadTo(quadStartPP.x.toFloat(), quadStartPP.y.toFloat(), quadEndPP.x.toFloat(), quadEndPP.y.toFloat())
-            }
-            val matrix = Matrix()
-            matrix.postScale(imageView.width.toFloat(), imageView.height.toFloat())
-            path.transform(matrix)
-            path.close()
-            return path
+    private fun quadPath(hull: List<LSTriple>): Path {
+        val path = Path()
+        val start = getMidPoint(hull[hull.size - 1], hull[hull.size - 2])
+        path.moveTo(start.x.toFloat(), start.y.toFloat())
+        for (i in hull.indices) {
+            val control = hull[(if (i == 0) hull.size else i) - 1]
+            val end = getMidPoint(control, hull[i])
+            path.quadTo(control.x.toFloat(), control.y.toFloat(), end.x.toFloat(), end.y.toFloat())
         }
+        path.transform(toPixels)
+        path.close()
+        return path
+    }
 
-        @SuppressLint("UnsafeExperimentalUsageError")
-        fun updateLSystem(
-            image: ImageProxy,
-            luminance: Array<DoubleArray>,
-            model: LSystemViewModel,
-            line: MutableList<LSTriple>
-        ): MutableList<LSTriple> {
-            val plane = image.image?.planes?.get(0)
-
-            // TODO Check if w > h and do opposite
-            val vhDiff = (image.width - image.height) / 2
-            val hRange = 0 until image.height
-            val vRange = vhDiff until image.width - vhDiff
-            for (y in hRange) {
-                for (x in vRange) {
-                    val byte = (plane?.buffer?.get(x + y * plane.rowStride) ?: Byte.MIN_VALUE)
-                    val f = byte.toDouble() / 256.0
-                    luminance[image.height - y - 1][x - vhDiff] = 1 - if (f < 0) f + 1 else f
-                }
-            }
-            // TODO END
-
-            val maxWidth = model.getMaxWidth()
-            val minWidth = model.getMinWidth()
-            // 1 == full brightness, 0 == lowest brightness
-            val brightness = 2.0.pow(model.getBrightnessMod())
-
-            // 0 == full contrast, max width diff, 1 == no contrast, width is same all over
-            val contrast = (1 - model.getContrastMod()) * (maxWidth + minWidth) / 2f
-
-            LSystemGenerator.setLineWidthAccordingToImage(
-                line = line,
-                luminanceData = luminance,
-                minWidth = (minWidth + contrast) * brightness,
-                maxWidth = (maxWidth - contrast) * brightness
-            )
-
-            LSystemGenerator.smoothenWidthOfLine(line)
-
-            val outputSideBuffer = maxWidth + 0.02f
-
-            LSystemGenerator.addSideBuffer(outputSideBuffer, line)
-
-            return line
-        }
+    private companion object {
+        const val SIZE = 1024
     }
 }
