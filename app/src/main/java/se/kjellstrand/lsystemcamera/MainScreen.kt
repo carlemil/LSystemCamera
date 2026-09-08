@@ -112,12 +112,6 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
                     }
                 }
             }
-            Text(
-                displayName(ui.system.name),
-                Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
             SystemStrip(ui.system, vm::select)
 
             // One slider at a time: pick the parameter, then adjust it.
