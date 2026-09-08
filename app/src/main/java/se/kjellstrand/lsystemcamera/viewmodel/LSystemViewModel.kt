@@ -22,12 +22,14 @@ class LSystemViewModel : ViewModel() {
     val frame = MutableStateFlow<Bitmap?>(null)
     /** Observed by MainActivity, which rebinds the camera when it flips. */
     val frontCamera = MutableStateFlow(false)
+    /** Shutter: while true the last frame is kept and new camera images are dropped. */
+    val frozen = MutableStateFlow(false)
 
     /** Lives here, not in the Activity, so it survives recreation on theme change. */
     val executor = Executors.newSingleThreadExecutor()
     private val renderer = ImageAnalyzer()
     val analyzer = ImageAnalysis.Analyzer { image ->
-        image.use { frame.value = renderer.analyze(it, ui.value) }
+        image.use { if (!frozen.value) frame.value = renderer.analyze(it, ui.value) }
     }
 
     fun select(system: LSystem) = ui.update { UiState(system = system, contrast = it.contrast, brightness = it.brightness) }

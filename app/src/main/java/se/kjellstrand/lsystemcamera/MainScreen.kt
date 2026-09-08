@@ -8,8 +8,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -24,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -51,6 +54,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.update
@@ -62,7 +67,7 @@ private val systems = LSystem.systems.filter { it.name != "KochSnowFlake" }.sort
 private val params = listOf(R.string.contrastSliderText, R.string.brightnessSliderText, R.string.iterationsSliderText)
 
 @Composable
-fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit, onSwitchCamera: () -> Unit) {
+fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
     val ui by vm.ui.collectAsState()
     val frame by vm.frame.collectAsState()
     Scaffold { inner ->
@@ -76,15 +81,7 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit, on
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.app_name), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = onSwitchCamera, enabled = hasCamera) {
-                    Icon(painterResource(R.drawable.ic_switch_camera), contentDescription = stringResource(R.string.switch_camera))
-                }
-                IconButton(onClick = onShare, enabled = frame != null) {
-                    Icon(painterResource(android.R.drawable.ic_menu_share), contentDescription = stringResource(R.string.share))
-                }
-            }
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
             Surface(
                 Modifier.fillMaxWidth().aspectRatio(1f),
                 shape = MaterialTheme.shapes.large,
@@ -94,6 +91,25 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit, on
                     frame?.let { Image(it.asImageBitmap(), contentDescription = null, Modifier.fillMaxSize()) }
                 } else {
                     CameraPermission()
+                }
+            }
+            val frozen by vm.frozen.collectAsState()
+            // Two states: live shows the shutter, held shows the resume button in the same spot.
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(onClick = { vm.frontCamera.update { !it } }, enabled = hasCamera) {
+                        Icon(painterResource(R.drawable.ic_switch_camera), contentDescription = stringResource(R.string.switch_camera))
+                    }
+                }
+                if (frozen) {
+                    Resume { vm.frozen.value = false }
+                } else {
+                    Shutter(enabled = frame != null) { vm.frozen.value = true }
+                }
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(onClick = onShare, enabled = frame != null) {
+                        Icon(painterResource(android.R.drawable.ic_menu_share), contentDescription = stringResource(R.string.share))
+                    }
                 }
             }
             Text(
@@ -133,6 +149,44 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit, on
                 }
             }
         }
+    }
+}
+
+/** Camera-style ring: holds the current frame so Share exports exactly what is on screen. */
+@Composable
+private fun Shutter(enabled: Boolean, onClick: () -> Unit) {
+    val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val label = stringResource(R.string.capture)
+    Box(
+        Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .clickable(enabled = enabled, onClick = onClick)
+            .border(3.dp, color, CircleShape)
+            .padding(7.dp)
+            .background(color, CircleShape)
+            .semantics { contentDescription = label }
+    )
+}
+
+/** Same footprint as the shutter, so the row does not shift between states. */
+@Composable
+private fun Resume(onClick: () -> Unit) {
+    val color = MaterialTheme.colorScheme.primary
+    Box(
+        Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+            .border(3.dp, color, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painterResource(android.R.drawable.ic_media_play),
+            contentDescription = stringResource(R.string.resume),
+            Modifier.size(32.dp),
+            tint = color
+        )
     }
 }
 

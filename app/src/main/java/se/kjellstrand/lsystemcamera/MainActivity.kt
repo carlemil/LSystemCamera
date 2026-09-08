@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.core.app.ShareCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import java.io.File
@@ -35,7 +34,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { LSystemTheme { MainScreen(vm, hasCamera, onShare = ::share, onSwitchCamera = { vm.frontCamera.update { !it } }) } }
+        setContent { LSystemTheme { MainScreen(vm, hasCamera, onShare = ::share) } }
     }
 
     // Covers first launch, returning from the permission dialog, and returning from Settings.
