@@ -11,7 +11,7 @@ import java.util.concurrent.Executors
 
 data class UiState(
     val system: LSystem = LSystem.getByName("Moore"),
-    val iterations: Int = system.maxIterations - 1,
+    val iterations: Int = system.defaultIterations,
     val contrast: Float = 1f,
     val brightness: Float = 0f,
 )

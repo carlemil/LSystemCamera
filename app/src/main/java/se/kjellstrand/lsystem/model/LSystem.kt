@@ -12,6 +12,8 @@ class LSystem(
     val lineWidthBold: Double,
     var minIterations: Int,
     var maxIterations: Int,
+    /** Iteration shown when the curve is picked: dense enough to carry an image, not a black square. */
+    val defaultIterations: Int = maxIterations - 1,
     var intermediateSplines: Int
 ) {
     fun getAngleInRadians(): Double {
@@ -43,8 +45,8 @@ class LSystem(
                 rules = mapOf("A" to "A+BF", "B" to "FA-B"),
                 forwardChars = setOf("F"),
                 axiom = "FA",
-                lineWidthExp = 1.45,
-                lineWidthBold = 0.1,
+                lineWidthExp = 1.414,
+                lineWidthBold = 0.128,
                 minIterations = 1,
                 maxIterations = 13,
                 intermediateSplines = 3
@@ -55,10 +57,10 @@ class LSystem(
                 rules = mapOf("A" to "A+BF", "B" to "FA-B"),
                 forwardChars = setOf("F"),
                 axiom = "FA+FA+",
-                lineWidthExp = 1.45,
-                lineWidthBold = 0.1,
+                lineWidthExp = 1.414,
+                lineWidthBold = 0.116,
                 minIterations = 1,
-                maxIterations = 14,
+                maxIterations = 12,
                 intermediateSplines = 3
             ),
             LSystem(
@@ -67,8 +69,8 @@ class LSystem(
                 rules = mapOf("F" to "+F----F++++F-"),
                 forwardChars = setOf("F"),
                 axiom = "F++++F++++F",
-                lineWidthExp = 1.667,
-                lineWidthBold = 0.15,
+                lineWidthExp = 1.732,
+                lineWidthBold = 0.165,
                 minIterations = 1,
                 maxIterations = 8,
                 intermediateSplines = 1
@@ -80,9 +82,10 @@ class LSystem(
                 forwardChars = setOf("F"),
                 axiom = "A",
                 lineWidthExp = 2.0,
-                lineWidthBold = 0.5,
+                lineWidthBold = 0.385,
                 minIterations = 1,
                 maxIterations = 8,
+                defaultIterations = 6,
                 intermediateSplines = 0
             ),
             LSystem(
@@ -92,9 +95,10 @@ class LSystem(
                 forwardChars = setOf("F"),
                 axiom = "A",
                 lineWidthExp = 2.0,
-                lineWidthBold = 0.4,
+                lineWidthBold = 0.383,
                 minIterations = 1,
                 maxIterations = 9,
+                defaultIterations = 7,
                 intermediateSplines = 0
             ),
             LSystem(
@@ -104,9 +108,10 @@ class LSystem(
                 forwardChars = setOf("F", "G"),
                 axiom = "F--XF--F--XF",
                 lineWidthExp = 2.0,
-                lineWidthBold = 0.15,
+                lineWidthBold = 0.114,
                 minIterations = 1,
                 maxIterations = 7,
+                defaultIterations = 5,
                 intermediateSplines = 0
             ),
             LSystem(
@@ -116,9 +121,10 @@ class LSystem(
                 forwardChars = setOf("F"),
                 axiom = "F+XF+F+XF",
                 lineWidthExp = 2.0,
-                lineWidthBold = 0.15,
+                lineWidthBold = 0.098,
                 minIterations = 1,
                 maxIterations = 7,
+                defaultIterations = 5,
                 intermediateSplines = 0
             ),
             LSystem(
@@ -127,8 +133,8 @@ class LSystem(
                 rules = mapOf("A" to "A-B--B+A++AA+B-", "B" to "+A-BB--B-A++A+B"),
                 forwardChars = setOf("A", "B"),
                 axiom = "A",
-                lineWidthExp = 2.5,
-                lineWidthBold = 0.28,
+                lineWidthExp = 2.646,
+                lineWidthBold = 0.326,
                 minIterations = 1,
                 maxIterations = 5,
                 intermediateSplines = 0
@@ -140,7 +146,7 @@ class LSystem(
                 forwardChars = setOf("F"),
                 axiom = "L",
                 lineWidthExp = 3.0,
-                lineWidthBold = 0.35,
+                lineWidthBold = 0.385,
                 minIterations = 1,
                 maxIterations = 5,
                 intermediateSplines = 0
@@ -152,9 +158,10 @@ class LSystem(
                 forwardChars = setOf("F"),
                 axiom = "AFA+F+AFA",
                 lineWidthExp = 2.0,
-                lineWidthBold = 0.2,
+                lineWidthBold = 0.193,
                 minIterations = 1,
                 maxIterations = 7,
+                defaultIterations = 5,
                 intermediateSplines = 0
             ),
             LSystem(
@@ -164,8 +171,8 @@ class LSystem(
                     "Y" to "+FXFX-YF-YF+FX+FXYF+FX-YFYF-FX-YF+FXYFYF-FX-YFFX+FX+YF-YF-FX+FX+YFY"),
                 forwardChars = setOf("F"),
                 axiom = "-YF",
-                lineWidthExp = 4.0,
-                lineWidthBold = 0.2,
+                lineWidthExp = 5.0,
+                lineWidthBold = 0.372,
                 minIterations = 1,
                 maxIterations = 3,
                 intermediateSplines = 0
@@ -176,8 +183,8 @@ class LSystem(
                 rules = mapOf("F" to "F+FF++F+F"),
                 forwardChars = setOf("F"),
                 axiom = "F+F+F+F",
-                lineWidthExp = 3.0,
-                lineWidthBold = 0.2,
+                lineWidthExp = 2.25,
+                lineWidthBold = 0.113,
                 minIterations = 1,
                 maxIterations = 6,
                 intermediateSplines = 0
@@ -188,8 +195,8 @@ class LSystem(
                 rules = mapOf("F" to "F++F++F+++++F-F++F"),
                 forwardChars = setOf("F"),
                 axiom = "F++F++F++F++F",
-                lineWidthExp = 3.0,
-                lineWidthBold = 0.2,
+                lineWidthExp = 2.618,
+                lineWidthBold = 0.146,
                 minIterations = 1,
                 maxIterations = 5,
                 intermediateSplines = 0
@@ -201,7 +208,7 @@ class LSystem(
                 forwardChars = setOf("F"),
                 axiom = "F+F+F+F",
                 lineWidthExp = 3.0,
-                lineWidthBold = 0.2,
+                lineWidthBold = 0.503,
                 minIterations = 1,
                 maxIterations = 5,
                 intermediateSplines = 3
@@ -236,10 +243,11 @@ class LSystem(
                 rules = mapOf("F" to "F+F-F"),
                 forwardChars = setOf("F"),
                 axiom = "F",
-                lineWidthExp = 1.667,
-                lineWidthBold = 0.15,
+                lineWidthExp = 1.732,
+                lineWidthBold = 0.198,
                 minIterations = 1,
                 maxIterations = 10,
+                defaultIterations = 8,
                 intermediateSplines = 1
             ),
             LSystem(
@@ -249,7 +257,7 @@ class LSystem(
                 forwardChars = setOf("F"),
                 axiom = "-X--X",
                 lineWidthExp = 2.0,
-                lineWidthBold = 0.15,
+                lineWidthBold = 0.273,
                 minIterations = 1,
                 maxIterations = 7,
                 intermediateSplines = 0
