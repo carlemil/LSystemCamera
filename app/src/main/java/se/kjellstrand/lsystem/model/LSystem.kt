@@ -207,6 +207,42 @@ class LSystem(
                 intermediateSplines = 3
             ),
             LSystem(
+                name = "FassThree",
+                angle = 90.0,
+                rules = mapOf("L" to "LF+RFR+FL-F-LFLFL-FRFR+", "R" to "-LFLF+RFRFR+F+RF-LFL-FR"),
+                forwardChars = setOf("F"),
+                axiom = "-L",
+                lineWidthExp = 3.0,
+                lineWidthBold = 0.35,
+                minIterations = 1,
+                maxIterations = 5,
+                intermediateSplines = 0
+            ),
+            LSystem(
+                name = "FassFour",
+                angle = 90.0,
+                rules = mapOf("L" to "LFLF+RFR+FLFL-FRF-LFL-FR+F+RF-LFL-FRFRFR+", "R" to "-LFLFLF+RFR+FL-F-LF+RFR+FLF+RFRF-LFL-FRFR"),
+                forwardChars = setOf("F"),
+                axiom = "-L",
+                lineWidthExp = 4.0,
+                lineWidthBold = 0.4,
+                minIterations = 1,
+                maxIterations = 4,
+                intermediateSplines = 0
+            ),
+            LSystem(
+                name = "Terdragon",
+                angle = 120.0,
+                rules = mapOf("F" to "F+F-F"),
+                forwardChars = setOf("F"),
+                axiom = "F",
+                lineWidthExp = 1.667,
+                lineWidthBold = 0.15,
+                minIterations = 1,
+                maxIterations = 10,
+                intermediateSplines = 1
+            ),
+            LSystem(
                 name = "KrishnaAnklets",
                 angle = 45.0,
                 rules = mapOf("X" to "XFX--XFX"),

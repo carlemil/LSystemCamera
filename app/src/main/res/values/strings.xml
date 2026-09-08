@@ -4,6 +4,7 @@
     <string name="iterationsSliderText">Complexity</string>
     <string name="brightnessSliderText">Brightness</string>
     <string name="share">Share image</string>
+    <string name="switch_camera">Switch camera</string>
     <string name="camera_rationale">L-system Camera draws what the camera sees as a fractal curve. It needs camera access to work. Nothing is stored or sent anywhere.</string>
     <string name="allow_camera">Allow camera</string>
     <string name="open_settings">Open settings</string>

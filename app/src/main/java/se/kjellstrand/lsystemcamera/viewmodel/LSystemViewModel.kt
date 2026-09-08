@@ -20,6 +20,8 @@ class LSystemViewModel : ViewModel() {
 
     val ui = MutableStateFlow(UiState())
     val frame = MutableStateFlow<Bitmap?>(null)
+    /** Observed by MainActivity, which rebinds the camera when it flips. */
+    val frontCamera = MutableStateFlow(false)
 
     /** Lives here, not in the Activity, so it survives recreation on theme change. */
     val executor = Executors.newSingleThreadExecutor()

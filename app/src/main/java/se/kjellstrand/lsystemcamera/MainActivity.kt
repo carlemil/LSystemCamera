@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.app.ShareCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import java.io.File
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { LSystemTheme { MainScreen(vm, hasCamera, onShare = ::share) } }
+        setContent { LSystemTheme { MainScreen(vm, hasCamera, onShare = ::share, onSwitchCamera = { vm.frontCamera.update { !it } }) } }
     }
 
     // Covers first launch, returning from the permission dialog, and returning from Settings.
@@ -63,8 +64,15 @@ class MainActivity : ComponentActivity() {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
             analysis.setAnalyzer(vm.executor, vm.analyzer)
-            provider.unbindAll()
-            provider.bindToLifecycle(this@MainActivity, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
+            vm.frontCamera.collect { front ->
+                val selector = if (front && provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
+                    CameraSelector.DEFAULT_FRONT_CAMERA
+                } else {
+                    CameraSelector.DEFAULT_BACK_CAMERA
+                }
+                provider.unbindAll()
+                provider.bindToLifecycle(this@MainActivity, selector, analysis)
+            }
         }
     }
 

@@ -62,7 +62,7 @@ private val systems = LSystem.systems.filter { it.name != "KochSnowFlake" }.sort
 private val params = listOf(R.string.contrastSliderText, R.string.brightnessSliderText, R.string.iterationsSliderText)
 
 @Composable
-fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
+fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit, onSwitchCamera: () -> Unit) {
     val ui by vm.ui.collectAsState()
     val frame by vm.frame.collectAsState()
     Scaffold { inner ->
@@ -78,6 +78,9 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.app_name), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                IconButton(onClick = onSwitchCamera, enabled = hasCamera) {
+                    Icon(painterResource(R.drawable.ic_switch_camera), contentDescription = stringResource(R.string.switch_camera))
+                }
                 IconButton(onClick = onShare, enabled = frame != null) {
                     Icon(painterResource(android.R.drawable.ic_menu_share), contentDescription = stringResource(R.string.share))
                 }
@@ -93,6 +96,12 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
                     CameraPermission()
                 }
             }
+            Text(
+                displayName(ui.system.name),
+                Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
             SystemStrip(ui.system, vm::select)
 
             // One slider at a time: pick the parameter, then adjust it.
@@ -204,16 +213,25 @@ private fun ValueSlider(
 /** "SierpinskiTriangle" -> "Sierpinski Triangle". */
 private fun displayName(name: String) = name.replace(Regex("(?<=[a-z])(?=[A-Z])"), " ")
 
+/** Icons are rendered by CurvePreviewTest (app/src/test) and copied into res/drawable-nodpi. */
 private fun iconFor(name: String) = when (name) {
+    "Cross" -> R.drawable.cross
     "Dragon" -> R.drawable.dragon
+    "FassFour" -> R.drawable.fass_four
+    "FassThree" -> R.drawable.fass_three
     "Fudgeflake" -> R.drawable.fudge_flake
     "Gosper" -> R.drawable.gosper
     "Hilbert" -> R.drawable.hilbert
+    "KrishnaAnklets" -> R.drawable.krishna_anklets
     "Moore" -> R.drawable.moore
     "Peano" -> R.drawable.peano
+    "Pentaplexity" -> R.drawable.pentaplexity
+    "QuadraticGosper" -> R.drawable.quadratic_gosper
     "SierpinskiCurve" -> R.drawable.sierpinski_curve
     "SierpinskiSquare" -> R.drawable.sierpinski_square
     "SierpinskiTriangle" -> R.drawable.sierpinski_triangle
+    "Terdragon" -> R.drawable.terdragon
+    "Tiles" -> R.drawable.tiles
     "TwinDragon" -> R.drawable.twin_dragon
     else -> R.drawable.unknown_system
 }
