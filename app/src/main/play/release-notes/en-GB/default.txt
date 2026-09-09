@@ -4,3 +4,4 @@ Switch between back and front camera.
 Three new curves: Fass Three, Fass Four and Terdragon.
 Every curve now has its own icon.
 Line widths and default complexity retuned for every curve so strokes never merge.
+Less than half the download size.
