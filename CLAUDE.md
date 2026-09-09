@@ -28,7 +28,7 @@ Signing and publishing follow the same shape as FieldShootingTimer, so the `/rel
 
 - `keystore.properties` at repo root (gitignored) with `storeFile` (absolute path, forward slashes), `storePassword`, `keyAlias=key0`, `keyPassword`. The upload key is the one enrolled in Play App Signing.
 - `play-account.json` at repo root (gitignored): Play Console service-account key with Release manager role.
-- `app/build.gradle.kts` holds `appVersionCode` / `appVersionName`; the Gradle Play Publisher plugin uploads to the **internal** track (`:app:publishReleaseBundle`). Production promotion is manual in Play Console.
+- `app/build.gradle.kts` holds `appVersionCode` / `appVersionName`; the Gradle Play Publisher plugin uploads to the **internal** track (`:app:publishReleaseBundle`). The release build is minified with R8 (`proguard-android-optimize.txt`, no custom keep rules needed so far) and the plugin uploads `app/build/outputs/mapping/release/mapping.txt` with the bundle. `installRelease` fails on a device that has the debug build: uninstall it first, the signatures differ. Production promotion is manual in Play Console.
 - Release notes: `app/src/main/play/release-notes/en-GB/default.txt` (en-GB is the listing's default locale in Play Console; the app is English-only).
 - Store listing graphics (512px icon, phone screenshots) live in `app/src/main/play/listings/en-GB/graphics/` and are uploaded by `:app:publishReleaseListing`, which is separate from the bundle upload. Screenshots are 1080x1920 emulator captures (`adb shell wm size 1080x1920` on a Pixel 9 AVD); the icon is the launcher foreground cropped to its safe zone over white.
 - Privacy policy: `PRIVACY.md` at repo root; its GitHub URL is the one entered in Play Console.
