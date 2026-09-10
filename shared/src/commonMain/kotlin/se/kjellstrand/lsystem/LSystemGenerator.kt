@@ -2,8 +2,7 @@ package se.kjellstrand.lsystem
 
 import se.kjellstrand.lsystem.model.LSTriple
 import se.kjellstrand.lsystem.model.LSystem
-import java.lang.Math.PI
-import java.util.*
+import kotlin.math.PI
 import kotlin.math.pow
 
 /**
@@ -89,16 +88,16 @@ object LSystemGenerator {
         var y = 0.0
         var angle: Double = (PI / 2)
 
-        val stack: Stack<LSTriple> = Stack()
+        val stack = ArrayDeque<LSTriple>()
 
         list.add(LSTriple(x, y, 1.0))
         for (c in instructions) {
             when (c.toString()) {
                 "-" -> angle -= systemAngle
                 "+" -> angle += systemAngle
-                "[" -> stack.push(LSTriple(x, y, 1.0))
+                "[" -> stack.addLast(LSTriple(x, y, 1.0))
                 "]" -> {
-                    val p = stack.pop()
+                    val p = stack.removeLast()
                     x = p.x
                     y = p.y
                 }

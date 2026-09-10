@@ -28,6 +28,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,19 +55,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.update
 import se.kjellstrand.lsystem.model.LSystem
+import se.kjellstrand.lsystemcamera.resources.*
 import se.kjellstrand.lsystemcamera.viewmodel.LSystemViewModel
 import kotlin.math.roundToInt
 
 private val systems = LSystem.systems.filter { it.name != "KochSnowFlake" }.sortedBy { it.name }
-private val params = listOf(R.string.contrastSliderText, R.string.brightnessSliderText, R.string.iterationsSliderText)
+private val params = listOf(Res.string.contrastSliderText, Res.string.brightnessSliderText, Res.string.iterationsSliderText)
 
 @Composable
 fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
@@ -81,7 +85,7 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.headlineSmall)
             Surface(
                 Modifier.fillMaxWidth().aspectRatio(1f),
                 shape = MaterialTheme.shapes.large,
@@ -98,7 +102,7 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     IconButton(onClick = { vm.frontCamera.update { !it } }, enabled = hasCamera) {
-                        Icon(painterResource(R.drawable.ic_switch_camera), contentDescription = stringResource(R.string.switch_camera))
+                        Icon(painterResource(Res.drawable.ic_switch_camera), contentDescription = stringResource(Res.string.switch_camera))
                     }
                 }
                 if (frozen) {
@@ -108,7 +112,7 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
                 }
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     IconButton(onClick = onShare, enabled = frame != null) {
-                        Icon(painterResource(android.R.drawable.ic_menu_share), contentDescription = stringResource(R.string.share))
+                        Icon(Icons.Default.Share, contentDescription = stringResource(Res.string.share))
                     }
                 }
             }
@@ -150,7 +154,7 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
 @Composable
 private fun Shutter(enabled: Boolean, onClick: () -> Unit) {
     val color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-    val label = stringResource(R.string.capture)
+    val label = stringResource(Res.string.capture)
     Box(
         Modifier
             .size(64.dp)
@@ -176,8 +180,8 @@ private fun Resume(onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            painterResource(android.R.drawable.ic_media_play),
-            contentDescription = stringResource(R.string.resume),
+            Icons.Default.PlayArrow,
+            contentDescription = stringResource(Res.string.resume),
             Modifier.size(32.dp),
             tint = color
         )
@@ -193,9 +197,9 @@ private fun CameraPermission() {
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(stringResource(R.string.camera_rationale), textAlign = TextAlign.Center)
+        Text(stringResource(Res.string.camera_rationale), textAlign = TextAlign.Center)
         Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
-            Text(stringResource(R.string.allow_camera))
+            Text(stringResource(Res.string.allow_camera))
         }
         // Shown after any denial, so "don't ask again" has a way out without an Activity reference.
         TextButton(onClick = {
@@ -206,7 +210,7 @@ private fun CameraPermission() {
                 )
             )
         }) {
-            Text(stringResource(R.string.open_settings))
+            Text(stringResource(Res.string.open_settings))
         }
     }
 }
@@ -261,25 +265,25 @@ private fun ValueSlider(
 /** "SierpinskiTriangle" -> "Sierpinski Triangle". */
 private fun displayName(name: String) = name.replace(Regex("(?<=[a-z])(?=[A-Z])"), " ")
 
-/** Icons are rendered by CurvePreviewTest (app/src/test) and copied into res/drawable-nodpi. */
+/** Icons are rendered by CurvePreviewTest (shared/src/jvmTest) and copied into composeResources/drawable. */
 private fun iconFor(name: String) = when (name) {
-    "Cross" -> R.drawable.cross
-    "Dragon" -> R.drawable.dragon
-    "FassFour" -> R.drawable.fass_four
-    "FassThree" -> R.drawable.fass_three
-    "Fudgeflake" -> R.drawable.fudge_flake
-    "Gosper" -> R.drawable.gosper
-    "Hilbert" -> R.drawable.hilbert
-    "KrishnaAnklets" -> R.drawable.krishna_anklets
-    "Moore" -> R.drawable.moore
-    "Peano" -> R.drawable.peano
-    "Pentaplexity" -> R.drawable.pentaplexity
-    "QuadraticGosper" -> R.drawable.quadratic_gosper
-    "SierpinskiCurve" -> R.drawable.sierpinski_curve
-    "SierpinskiSquare" -> R.drawable.sierpinski_square
-    "SierpinskiTriangle" -> R.drawable.sierpinski_triangle
-    "Terdragon" -> R.drawable.terdragon
-    "Tiles" -> R.drawable.tiles
-    "TwinDragon" -> R.drawable.twin_dragon
-    else -> R.drawable.unknown_system
+    "Cross" -> Res.drawable.cross
+    "Dragon" -> Res.drawable.dragon
+    "FassFour" -> Res.drawable.fass_four
+    "FassThree" -> Res.drawable.fass_three
+    "Fudgeflake" -> Res.drawable.fudge_flake
+    "Gosper" -> Res.drawable.gosper
+    "Hilbert" -> Res.drawable.hilbert
+    "KrishnaAnklets" -> Res.drawable.krishna_anklets
+    "Moore" -> Res.drawable.moore
+    "Peano" -> Res.drawable.peano
+    "Pentaplexity" -> Res.drawable.pentaplexity
+    "QuadraticGosper" -> Res.drawable.quadratic_gosper
+    "SierpinskiCurve" -> Res.drawable.sierpinski_curve
+    "SierpinskiSquare" -> Res.drawable.sierpinski_square
+    "SierpinskiTriangle" -> Res.drawable.sierpinski_triangle
+    "Terdragon" -> Res.drawable.terdragon
+    "Tiles" -> Res.drawable.tiles
+    "TwinDragon" -> Res.drawable.twin_dragon
+    else -> Res.drawable.unknown_system
 }

@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "LSystemCamera"
 include(":app")
+include(":shared")

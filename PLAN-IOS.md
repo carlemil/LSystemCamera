@@ -4,7 +4,7 @@ Source of truth for the port. Orchestrator workflow: one task = one reviewed com
 the Android gate must stay green after every task:
 
 ```
-.\gradlew.bat :shared:testDebugUnitTest :app:assembleDebug --rerun-tasks
+.\gradlew.bat :shared:jvmTest :app:assembleDebug --rerun-tasks
 ```
 
 ## Context
@@ -41,7 +41,7 @@ multiplatform plugin, then 9.2.1 (Markera).
 
 ## Tasks
 
-- [ ] **1. Restructure** to `shared/` (KMP library, androidTarget + jvm + iosArm64 +
+- [x] **1. Restructure** to `shared/` (KMP library, androidTarget + jvm + iosArm64 +
   iosSimulatorArm64, static `Shared` framework) + `app/` (Android entry, signing,
   Play). Move both packages to `commonMain` where they compile, `androidMain`
   otherwise; strings + 19 icons to composeResources; tests to `jvmTest`
@@ -60,8 +60,8 @@ multiplatform plugin, then 9.2.1 (Markera).
 
 ## Follow-ups / queue
 
-(none yet)
+- Task 5 docs: composeResources vector XML must use literal colours (`#FFFFFFFF`), not `@android:color/...`; the Compose Multiplatform parser throws `Invalid color value` at runtime and no build step catches it (found 2026-09-10 on the emulator). Tests now run with `:shared:jvmTest` and write PNGs under `shared/build/`; icons live in `shared/src/commonMain/composeResources/drawable`; `android.builtInKotlin=false` so `kotlin-android` is applied explicitly in `app/`.
 
 ## Status
 
-Task 1 in progress.
+Task 1 done (2026-09-10, verified on the Pixel 9 emulator with an emulated camera). Task 2 in progress.

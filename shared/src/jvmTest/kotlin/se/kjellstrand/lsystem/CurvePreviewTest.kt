@@ -13,8 +13,8 @@ import kotlin.math.hypot
 import javax.imageio.ImageIO
 
 /**
- * Not really a test: renders every catalog curve to app/build/curve-previews/ so new rules can be
- * eyeballed and the `-icon` files copied into res/drawable-nodpi. Runs with testDebugUnitTest.
+ * Not really a test: renders every catalog curve to shared/build/curve-previews/ so new rules can be
+ * eyeballed and the `-icon` files copied into commonMain/composeResources/drawable. Runs with jvmTest.
  */
 class CurvePreviewTest {
 
