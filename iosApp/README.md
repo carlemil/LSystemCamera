@@ -23,6 +23,8 @@ A minimal SwiftUI app that embeds the Compose Multiplatform UI exposed by
 - `iosApp/iosApp/PrivacyInfo.xcprivacy` — no tracking, no collected data and
   no required-reason API declarations: the app has no persistence at all
   (no datastore, no UserDefaults, no file timestamps).
+- `iosApp/iosAppUITests/ScreenshotTests.swift` — one XCUITest that drives the
+  app and saves PNGs of each state (see "Screenshot / smoke test" below).
 - `iosApp/Configuration/Signing.xcconfig.template` — copy to
   `Signing.xcconfig` (gitignored) with your real `DEVELOPMENT_TEAM`.
 - `iosApp/fastlane/` — `Fastfile` lanes for TestFlight (`beta`),
@@ -78,6 +80,30 @@ presents a `PHPickerViewController` instead, so the app asks for a photo at
 launch and renders that still. Add one first with
 `xcrun simctl addmedia booted <some.jpg>`. Tapping the switch-camera button
 re-presents the picker. The real AVFoundation capture path needs a device.
+
+## Screenshot / smoke test
+
+`iosAppUITests/ScreenshotTests.swift` drives the whole screen headlessly — it
+picks the newest photo, moves the contrast and complexity sliders, switches
+curve, freezes the frame and opens the share sheet, saving a PNG of each state
+to `/tmp/shots/`. That is the only way to see the render on a Mac with no
+attached GUI session (`Simulator.app` has no window there).
+
+```sh
+sips -s format jpeg ../app/src/main/play/listings/en-GB/graphics/phone-screenshots/1-moore.png --out /tmp/photo.jpg
+xcrun simctl addmedia booted /tmp/photo.jpg
+xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO \
+  -only-testing:iosAppUITests
+```
+
+Compose sets no test tags, so the test addresses elements by accessibility
+label (`Hold frame`, `Share image`, `Contrast`, curve names). Two exceptions,
+both worked around in the test: Compose's `Slider` surfaces as a plain "Other"
+with a percentage value rather than as `app.sliders`, and the PHPicker's grid
+tiles report as not hittable (they are in a remote view service), so both are
+driven by coordinate.
 
 ## Manual acceptance criteria
 
@@ -137,6 +163,7 @@ The script only requires the macOS-builtin `sips`. It also regenerates the
 ## Out of scope (intentional)
 
 - `fastlane match` for centralized cert/profile storage.
-- iOS UI tests / screenshot automation (no `iosAppUITests` target here).
-- CI-driven TestFlight upload. CI only builds the simulator app — see
-  `.github/workflows/ci.yml` (the `ios` job).
+- Store-screenshot automation: the UI test saves raw PNGs for inspection, it
+  does not stage App Store shots (no device matrix, no `snapshot`).
+- CI-driven TestFlight upload. CI builds the simulator app and runs the UI
+  test — see `.github/workflows/ci.yml` (the `ios` job).

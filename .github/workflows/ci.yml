@@ -62,3 +62,25 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO build
+      # Drives the app on a booted simulator (picks a photo, changes curve and
+      # sliders, freezes, shares) and writes PNGs to /tmp/shots. ~35 s locally.
+      # The picker needs something in the photo library, and the runner's
+      # newest iPhone varies with the image, so resolve it instead of naming it.
+      - name: UI test (screenshot run)
+        run: |
+          DEVICE=$(xcrun simctl list devices available | sed -nE 's/^ +(iPhone [^(]*[^ (]) \(.*/\1/p' | tail -1)
+          echo "Using $DEVICE"
+          xcrun simctl boot "$DEVICE" || true
+          sips -s format jpeg app/src/main/play/listings/en-GB/graphics/phone-screenshots/1-moore.png --out /tmp/photo.jpg
+          xcrun simctl addmedia booted /tmp/photo.jpg
+          cd iosApp
+          xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO -only-testing:iosAppUITests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-screenshots
+          path: /tmp/shots/*.png
+          if-no-files-found: ignore

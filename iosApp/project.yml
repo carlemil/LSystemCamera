@@ -56,7 +56,9 @@ targets:
         VERSIONING_SYSTEM: apple-generic
     # Emit a shared scheme so headless `xcodebuild -scheme iosApp` works in CI
     # (Xcode only auto-creates schemes when the project is opened in the IDE).
-    scheme: {}
+    scheme:
+      testTargets:
+        - iosAppUITests
     preBuildScripts:
       - name: "Build & sign Shared framework (Kotlin/Native)"
         script: |
@@ -70,3 +72,22 @@ targets:
         basedOnDependencyAnalysis: false
         outputFiles:
           - $(SRCROOT)/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/Shared.framework
+
+  # Drives the app headlessly so the render path can be checked without a GUI
+  # session (see iosAppUITests/ScreenshotTests.swift). Doesn't link the Shared
+  # framework — the empty OTHER_LDFLAGS override keeps the project-level
+  # -framework flag out.
+  iosAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: iosAppUITests
+    dependencies:
+      - target: iosApp
+    settings:
+      base:
+        TEST_TARGET_NAME: iosApp
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+        OTHER_LDFLAGS: []
