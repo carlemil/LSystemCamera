@@ -1,0 +1,72 @@
+name: iosApp
+options:
+  bundleIdPrefix: se.kjellstrand
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    # The shared Kotlin/Native framework is STATIC: link it explicitly and do
+    # not embed/copy it. embedAndSignAppleFrameworkForXcode writes the slice for
+    # the arch Xcode is building into the path below.
+    FRAMEWORK_SEARCH_PATHS:
+      - $(inherited)
+      - $(SRCROOT)/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+    OTHER_LDFLAGS:
+      - $(inherited)
+      - -framework
+      - Shared
+    SWIFT_VERSION: "5.0"
+
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      # Don't let XcodeGen author/overwrite the committed Info.plist (the `info:`
+      # key would do that and strip CFBundleDisplayName/orientations). We point
+      # INFOPLIST_FILE at the committed plist instead. Exclude it from the build
+      # phases so it isn't also copied in as a bundle resource.
+      - path: iosApp
+        excludes:
+          - "Info.plist"
+      - path: iosApp/Info.plist
+        buildPhase: none
+    # Signing.xcconfig is gitignored (per-developer team ID / profile). Copy
+    # Configuration/Signing.xcconfig.template → Signing.xcconfig and fill in.
+    # Simulator builds in CI still work because the workflow passes
+    # CODE_SIGNING_ALLOWED=NO on the xcodebuild command line.
+    configFiles:
+      Debug: Configuration/Signing.xcconfig
+      Release: Configuration/Signing.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: se.kjellstrand.lsystemcamera
+        INFOPLIST_FILE: iosApp/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # CFBundleVersion in Info.plist is $(CURRENT_PROJECT_VERSION). Default
+        # to 1 for local Debug builds; fastlane's `gym` overrides it via
+        # `xcargs CURRENT_PROJECT_VERSION=<git rev-count>` at archive time so
+        # every uploaded build has a unique number.
+        CURRENT_PROJECT_VERSION: 1
+        VERSIONING_SYSTEM: apple-generic
+    # Emit a shared scheme so headless `xcodebuild -scheme iosApp` works in CI
+    # (Xcode only auto-creates schemes when the project is opened in the IDE).
+    scheme: {}
+    preBuildScripts:
+      - name: "Build & sign Shared framework (Kotlin/Native)"
+        script: |
+          cd "$SRCROOT/.."
+          # Xcode runs build phases with a minimal PATH/env that often lacks a
+          # JDK. Resolve one via java_home so ./gradlew works from the GUI.
+          if [ -z "$JAVA_HOME" ] && /usr/libexec/java_home >/dev/null 2>&1; then
+            export JAVA_HOME="$(/usr/libexec/java_home)"
+          fi
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(SRCROOT)/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/Shared.framework

@@ -1,0 +1,6 @@
+app_identifier "se.kjellstrand.lsystemcamera"
+
+# Apple ID / Team ID come from environment so they stay out of git. Set them
+# in iosApp/fastlane/.env (gitignored) — see .env.template.
+apple_id ENV["FASTLANE_APPLE_ID"]
+team_id  ENV["FASTLANE_TEAM_ID"]

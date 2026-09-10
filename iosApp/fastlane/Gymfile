@@ -1,0 +1,11 @@
+project           "iosApp.xcodeproj"
+scheme            "iosApp"
+configuration     "Release"
+output_directory  "build/ios"
+output_name       "iosApp"
+export_method     "app-store"
+# `export_options` (hash with provisioningProfiles + teamID) is built in the
+# Fastfile lane after sigh resolves the profile name. Don't pin it here.
+clean             true
+include_bitcode   false
+include_symbols   true

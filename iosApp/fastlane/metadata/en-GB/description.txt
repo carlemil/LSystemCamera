@@ -1,0 +1,11 @@
+L-system Camera draws the live camera image as a single continuous fractal curve. Dark parts of the picture become thick line segments, bright parts thin ones, so the whole scene is rendered with one unbroken space-filling line.
+
+Features:
+- 18 curves to choose from — Hilbert, Moore, Gosper, Peano, Dragon, Sierpinski and more — picked from an icon strip
+- One big slider for contrast, brightness or complexity
+- Shutter button holds the frame so you can share exactly what you see; tap resume to go live again
+- Switch between the back and front camera
+- Share the result as a PNG to any app
+- Works in portrait and landscape
+
+The app needs camera access to work. Nothing is stored, nothing is uploaded, and there are no accounts, ads or analytics.
