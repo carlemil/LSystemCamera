@@ -15,7 +15,7 @@ stored by the app or sent anywhere.
 ## Sharing
 
 If you tap Share, the current drawing is written to the app's private cache
-folder and handed to the app you pick in the Android share sheet. Nothing is
+folder and handed to the app you pick in the system share sheet. Nothing is
 shared unless you choose to share it, and only with the app you choose.
 
 ## Permissions

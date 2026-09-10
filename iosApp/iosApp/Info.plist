@@ -30,8 +30,6 @@
     <true/>
     <key>NSCameraUsageDescription</key>
     <string>The camera image is drawn as a curve. Nothing is stored or uploaded.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Pick a photo to draw as a curve when no camera is available. Nothing is stored or uploaded.</string>
     <key>UILaunchScreen</key>
     <dict>
         <key>UIColorName</key>

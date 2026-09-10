@@ -1,0 +1,4 @@
+# Must stay LF: these run on macOS/Linux, and the repo is checked out on
+# Windows with core.autocrlf=true.
+*.sh text eol=lf
+gradlew text eol=lf

@@ -253,7 +253,7 @@ private fun ValueSlider(
 /** "SierpinskiTriangle" -> "Sierpinski Triangle". */
 private fun displayName(name: String) = name.replace(Regex("(?<=[a-z])(?=[A-Z])"), " ")
 
-/** Icons are rendered by CurvePreviewTest (shared/src/jvmTest) and copied into composeResources/drawable. */
+/** Icons are rendered by CurvePreviewTest (shared/src/androidUnitTest) and copied into composeResources/drawable. */
 private fun iconFor(name: String) = when (name) {
     "Cross" -> Res.drawable.cross
     "Dragon" -> Res.drawable.dragon

@@ -10,9 +10,8 @@ A minimal SwiftUI app that embeds the Compose Multiplatform UI exposed by
 - `iosApp/iosApp/ContentView.swift` — wraps `MainViewControllerKt.MainViewController()`
   from the shared framework in a `UIViewControllerRepresentable`.
 - `iosApp/iosApp/Info.plist` — portrait + both landscape orientations,
-  `NSCameraUsageDescription` (the live camera) and
-  `NSPhotoLibraryUsageDescription` (the PHPicker fallback used when the
-  device has no capture device, e.g. the simulator). `CFBundleVersion` is
+  `NSCameraUsageDescription` (the live camera; the PHPicker fallback needs
+  no photo-library permission, it runs out of process). `CFBundleVersion` is
   `$(CURRENT_PROJECT_VERSION)` so fastlane can stamp a unique build number
   on every archive. `CFBundleShortVersionString` is kept aligned with the
   Android `appVersionName` in `app/build.gradle.kts`.
