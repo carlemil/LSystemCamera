@@ -54,6 +54,9 @@ jobs:
       - name: Generate Xcode project
         working-directory: iosApp
         run: xcodegen generate
+      # ARCHS=arm64: the generic destination would also build x86_64, and :shared
+      # declares no iosX64 target (syncComposeResourcesForIos then fails with
+      # "provider has no value"). The runners are Apple Silicon anyway.
       - name: Build iosApp for simulator
         working-directory: iosApp
         run: |
@@ -61,7 +64,7 @@ jobs:
             -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO build
+            CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build
       # Drives the app on a booted simulator (picks a photo, changes curve and
       # sliders, freezes, shares) and writes PNGs to /tmp/shots. ~35 s locally.
       # The picker needs something in the photo library, and the runner's
