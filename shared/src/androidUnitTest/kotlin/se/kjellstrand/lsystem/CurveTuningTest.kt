@@ -14,7 +14,7 @@ import kotlin.math.hypot
 /**
  * Not a test: prints, per curve and iteration, the spacing between neighbouring strands and how
  * much of it the current max width fills, so lineWidthExp / lineWidthBold / defaultIterations
- * can be set by numbers instead of by eye. Runs with jvmTest.
+ * can be set by numbers instead of by eye. Runs with testDebugUnitTest.
  */
 class CurveTuningTest {
 

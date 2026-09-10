@@ -4,7 +4,7 @@ Source of truth for the port. Orchestrator workflow: one task = one reviewed com
 the Android gate must stay green after every task:
 
 ```
-.\gradlew.bat :shared:jvmTest :app:assembleDebug --rerun-tasks
+.\gradlew.bat :shared:testDebugUnitTest :shared:compileCommonMainKotlinMetadata :app:assembleDebug --rerun-tasks
 ```
 
 ## Context
@@ -47,7 +47,7 @@ multiplatform plugin, then 9.2.1 (Markera).
   otherwise; strings + 19 icons to composeResources; tests to `jvmTest`
   (`CurveTuningTest`/`CurvePreviewTest` use `java.awt`, stay JVM). Android
   behaviour identical. `compileKotlinIosSimulatorArm64` may still fail (that is task 2).
-- [ ] **2. Platform seams**: `LumaFrame`, Compose-graphics renderer, coroutine
+- [x] **2. Platform seams**: `LumaFrame`, Compose-graphics renderer, coroutine
   analyzer, `rememberCameraSource`/`rememberCameraPermission`/`shareImage`/
   `dynamicColorSchemeOrNull` expect + Android actuals. Gate:
   `:shared:compileKotlinIosSimulatorArm64` passes with stub iOS actuals (`TODO()`).
@@ -60,8 +60,11 @@ multiplatform plugin, then 9.2.1 (Markera).
 
 ## Follow-ups / queue
 
+- Task 2 outcome: the `jvm()` target was dropped (four expects would have needed dead JVM stubs); tests live in `shared/src/androidUnitTest` and run with `:shared:testDebugUnitTest` on the host JVM. `androidMain` holds only the four actuals (`CameraSource`, `CameraPermission`, `Share`, `DynamicColor` `.android.kt`). Slider labels now use `Format.kt` (always `.` decimal; the old `String.format` followed the device locale).
+- Check in the simulator (task 4): `displayName()` in `MainScreen.kt` uses a lookbehind regex; Kotlin/Native's regex engine must split "SierpinskiTriangle" the same way.
+- Pre-existing: `hasCamera(DEFAULT_FRONT_CAMERA)` can throw `CameraInfoUnavailableException`, now inside a `DisposableEffect`.
 - Task 5 docs: composeResources vector XML must use literal colours (`#FFFFFFFF`), not `@android:color/...`; the Compose Multiplatform parser throws `Invalid color value` at runtime and no build step catches it (found 2026-09-10 on the emulator). Tests now run with `:shared:jvmTest` and write PNGs under `shared/build/`; icons live in `shared/src/commonMain/composeResources/drawable`; `android.builtInKotlin=false` so `kotlin-android` is applied explicitly in `app/`.
 
 ## Status
 
-Task 1 done (2026-09-10, verified on the Pixel 9 emulator with an emulated camera). Task 2 in progress.
+Tasks 1-2 done (2026-09-10, verified on the Pixel 9 emulator: live, freeze, front camera, share, rationale, re-grant). Task 3 in progress.

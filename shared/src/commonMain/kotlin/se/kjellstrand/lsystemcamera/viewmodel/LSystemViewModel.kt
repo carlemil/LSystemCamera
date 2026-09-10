@@ -1,13 +1,12 @@
 package se.kjellstrand.lsystemcamera.viewmodel
 
-import android.graphics.Bitmap
-import androidx.camera.core.ImageAnalysis
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import se.kjellstrand.lsystem.model.LSystem
 import se.kjellstrand.lsystemcamera.ImageAnalyzer
-import java.util.concurrent.Executors
+import se.kjellstrand.lsystemcamera.LumaFrame
 
 data class UiState(
     val system: LSystem = LSystem.getByName("Moore"),
@@ -19,20 +18,22 @@ data class UiState(
 class LSystemViewModel : ViewModel() {
 
     val ui = MutableStateFlow(UiState())
-    val frame = MutableStateFlow<Bitmap?>(null)
-    /** Observed by MainActivity, which rebinds the camera when it flips. */
+    val frame = MutableStateFlow<ImageBitmap?>(null)
+    /** Read by the camera source, which rebinds when it flips. */
     val frontCamera = MutableStateFlow(false)
     /** Shutter: while true the last frame is kept and new camera images are dropped. */
     val frozen = MutableStateFlow(false)
 
-    /** Lives here, not in the Activity, so it survives recreation on theme change. */
-    val executor = Executors.newSingleThreadExecutor()
+    /** Lives here, not in the composition, so it survives recreation on theme change. */
     private val renderer = ImageAnalyzer()
-    val analyzer = ImageAnalysis.Analyzer { image ->
-        image.use { if (!frozen.value) frame.value = renderer.analyze(it, ui.value) }
+
+    /**
+     * Called from the camera's delivery thread, one frame at a time — that serialisation is the
+     * whole thread model, so the renderer needs no executor of its own.
+     */
+    fun onFrame(image: LumaFrame) {
+        if (!frozen.value) frame.value = renderer.analyze(image, ui.value)
     }
 
     fun select(system: LSystem) = ui.update { UiState(system = system, contrast = it.contrast, brightness = it.brightness) }
-
-    override fun onCleared() = executor.shutdown()
 }

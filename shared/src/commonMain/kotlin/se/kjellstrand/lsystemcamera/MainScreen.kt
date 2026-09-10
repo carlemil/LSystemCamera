@@ -1,11 +1,5 @@
 package se.kjellstrand.lsystemcamera
 
-import android.Manifest
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,8 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -71,9 +63,14 @@ private val systems = LSystem.systems.filter { it.name != "KochSnowFlake" }.sort
 private val params = listOf(Res.string.contrastSliderText, Res.string.brightnessSliderText, Res.string.iterationsSliderText)
 
 @Composable
-fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
+fun MainScreen(vm: LSystemViewModel) {
     val ui by vm.ui.collectAsState()
     val frame by vm.frame.collectAsState()
+    val permission = rememberCameraPermission()
+    val hasCamera = permission.granted
+    val front by vm.frontCamera.collectAsState()
+    if (hasCamera) rememberCameraSource(front, vm::onFrame)
+    val shareImage = rememberShareImage()
     Scaffold { inner ->
         Column(
             Modifier
@@ -92,9 +89,9 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
                 color = MaterialTheme.colorScheme.surfaceContainerHighest
             ) {
                 if (hasCamera) {
-                    frame?.let { Image(it.asImageBitmap(), contentDescription = null, Modifier.fillMaxSize()) }
+                    frame?.let { Image(it, contentDescription = null, Modifier.fillMaxSize()) }
                 } else {
-                    CameraPermission()
+                    CameraRationale(permission)
                 }
             }
             val frozen by vm.frozen.collectAsState()
@@ -111,7 +108,7 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
                     Shutter(enabled = frame != null) { vm.frozen.value = true }
                 }
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    IconButton(onClick = onShare, enabled = frame != null) {
+                    IconButton(onClick = { frame?.let(shareImage) }, enabled = frame != null) {
                         Icon(Icons.Default.Share, contentDescription = stringResource(Res.string.share))
                     }
                 }
@@ -131,10 +128,10 @@ fun MainScreen(vm: LSystemViewModel, hasCamera: Boolean, onShare: () -> Unit) {
             }
             val system = ui.system
             when (param) {
-                0 -> ValueSlider(ui.contrast, 0f..1f, "%.2f".format(ui.contrast)) { v ->
+                0 -> ValueSlider(ui.contrast, 0f..1f, format2(ui.contrast)) { v ->
                     vm.ui.update { it.copy(contrast = v) }
                 }
-                1 -> ValueSlider(ui.brightness, -2f..2f, "%+.1f".format(ui.brightness)) { v ->
+                1 -> ValueSlider(ui.brightness, -2f..2f, formatSigned1(ui.brightness)) { v ->
                     vm.ui.update { it.copy(brightness = v) }
                 }
                 else -> ValueSlider(
@@ -189,27 +186,18 @@ private fun Resume(onClick: () -> Unit) {
 }
 
 @Composable
-private fun CameraPermission() {
-    val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+private fun CameraRationale(permission: CameraPermissionState) {
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(stringResource(Res.string.camera_rationale), textAlign = TextAlign.Center)
-        Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
+        Button(onClick = permission.request) {
             Text(stringResource(Res.string.allow_camera))
         }
-        // Shown after any denial, so "don't ask again" has a way out without an Activity reference.
-        TextButton(onClick = {
-            context.startActivity(
-                Intent(
-                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.fromParts("package", context.packageName, null)
-                )
-            )
-        }) {
+        // Shown after any denial, so "don't ask again" has a way out.
+        TextButton(onClick = permission.openSettings) {
             Text(stringResource(Res.string.open_settings))
         }
     }

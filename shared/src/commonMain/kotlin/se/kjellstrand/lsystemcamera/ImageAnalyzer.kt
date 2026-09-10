@@ -1,13 +1,12 @@
 package se.kjellstrand.lsystemcamera
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.Path
-import androidx.camera.core.ImageProxy
-import androidx.core.graphics.createBitmap
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
+import androidx.compose.ui.graphics.Path
 import se.kjellstrand.lsystem.LSystemGenerator
 import se.kjellstrand.lsystem.buildHullFromPolygon
 import se.kjellstrand.lsystem.getMidPoint
@@ -19,11 +18,11 @@ import kotlin.math.pow
 
 /**
  * Turns one camera frame into one rendered bitmap. Single-threaded: only ever called from
- * the analyzer executor. Double-buffered so the UI never reads the bitmap being drawn.
+ * the camera's delivery thread. Double-buffered so the UI never reads the bitmap being drawn.
  */
 class ImageAnalyzer {
 
-    private val buffers = arrayOf(createBitmap(SIZE, SIZE), createBitmap(SIZE, SIZE))
+    private val buffers = arrayOf(ImageBitmap(SIZE, SIZE), ImageBitmap(SIZE, SIZE))
     private var current = 0
     private var luminance: Array<DoubleArray> = emptyArray()
 
@@ -33,15 +32,15 @@ class ImageAnalyzer {
     private var minWidth = 0.0
     private var maxWidth = 0.0
 
-    private val bgPaint = Paint().apply { color = Color.WHITE }
+    private val bgPaint = Paint().apply { color = Color.White }
     private val linePaint = Paint().apply {
-        color = Color.BLACK
-        style = Paint.Style.FILL_AND_STROKE
+        color = Color.Black
+        style = PaintingStyle.Fill
         isAntiAlias = true
     }
-    private val toPixels = Matrix().apply { postScale(SIZE.toFloat(), SIZE.toFloat()) }
+    private val toPixels = Matrix().apply { scale(SIZE.toFloat(), SIZE.toFloat()) }
 
-    fun analyze(image: ImageProxy, state: UiState): Bitmap {
+    fun analyze(image: LumaFrame, state: UiState): ImageBitmap {
         if (state.system !== cachedSystem || state.iterations != cachedIterations) {
             cachedSystem = state.system
             cachedIterations = state.iterations
@@ -77,19 +76,19 @@ class ImageAnalyzer {
      * dark == 1. `luminance[sx][sy]` is indexed in screen space. The portrait lock is ignored on
      * large screens from Android 17 (targetSdk 37), so the rotation is read per frame.
      */
-    private fun readLuminance(image: ImageProxy) {
+    private fun readLuminance(image: LumaFrame) {
         val side = min(image.width, image.height)
         if (luminance.size != side) luminance = Array(side) { DoubleArray(side) }
-        val plane = image.planes[0]
-        val buffer = plane.buffer
+        val rowStride = image.rowStride
+        val pixelStride = image.pixelStride
         val xOffset = (image.width - side) / 2
         val yOffset = (image.height - side) / 2
-        val rotation = image.imageInfo.rotationDegrees
+        val rotation = image.rotationDegrees
         val last = side - 1
         for (cy in 0 until side) {
-            val row = (cy + yOffset) * plane.rowStride + xOffset * plane.pixelStride
+            val row = (cy + yOffset) * rowStride + xOffset * pixelStride
             for (cx in 0 until side) {
-                val value = 1 - (buffer.get(row + cx * plane.pixelStride).toInt() and 0xFF) / 256.0
+                val value = 1 - image.byteAt(row + cx * pixelStride) / 256.0
                 when (rotation) {
                     90 -> luminance[last - cy][cx] = value
                     180 -> luminance[last - cx][last - cy] = value
@@ -107,7 +106,7 @@ class ImageAnalyzer {
         for (i in hull.indices) {
             val control = hull[(if (i == 0) hull.size else i) - 1]
             val end = getMidPoint(control, hull[i])
-            path.quadTo(control.x.toFloat(), control.y.toFloat(), end.x.toFloat(), end.y.toFloat())
+            path.quadraticTo(control.x.toFloat(), control.y.toFloat(), end.x.toFloat(), end.y.toFloat())
         }
         path.transform(toPixels)
         path.close()

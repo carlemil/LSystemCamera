@@ -14,7 +14,7 @@ import javax.imageio.ImageIO
 
 /**
  * Not really a test: renders every catalog curve to shared/build/curve-previews/ so new rules can be
- * eyeballed and the `-icon` files copied into commonMain/composeResources/drawable. Runs with jvmTest.
+ * eyeballed and the `-icon` files copied into commonMain/composeResources/drawable. Runs with testDebugUnitTest.
  */
 class CurvePreviewTest {
 

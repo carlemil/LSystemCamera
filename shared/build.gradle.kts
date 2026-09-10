@@ -16,9 +16,6 @@ kotlin {
         }
     }
 
-    // Host-test-only target: the curve tuning/preview renderers need java.awt.
-    jvm()
-
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -36,6 +33,7 @@ kotlin {
             api(compose.material3)
             api(compose.ui)
             api(compose.components.resources)
+            implementation(libs.compose.material.icons.core)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -44,9 +42,13 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.lifecycle.runtime.ktx)
-            api(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
         }
-        jvmTest.dependencies {
+        // The curve tuning/preview renderers need java.awt, so they run as Android unit
+        // tests on the host JVM (`testDebugUnitTest`) rather than on a device.
+        androidUnitTest.dependencies {
             implementation(libs.junit)
         }
     }
