@@ -67,18 +67,20 @@ jobs:
             CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build
       # Drives the app on a booted simulator (picks a photo, changes curve and
       # sliders, freezes, shares) and writes PNGs to /tmp/shots. ~35 s locally.
-      # The picker needs something in the photo library, and the runner's
-      # newest iPhone varies with the image, so resolve it instead of naming it.
+      # The picker needs something in the photo library. The runner's simulators
+      # vary with the image, so pick the newest available iPhone by UDID (names
+      # like "iPhone SE (3rd generation)" don't survive a naive name match).
       - name: UI test (screenshot run)
         run: |
-          DEVICE=$(xcrun simctl list devices available | sed -nE 's/^ +(iPhone [^(]*[^ (]) \(.*/\1/p' | tail -1)
-          echo "Using $DEVICE"
-          xcrun simctl boot "$DEVICE" || true
+          UDID=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))] | last | .udid')
+          echo "Using $UDID: $(xcrun simctl list devices available | grep "$UDID")"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
           sips -s format jpeg app/src/main/play/listings/en-GB/graphics/phone-screenshots/1-moore.png --out /tmp/photo.jpg
-          xcrun simctl addmedia booted /tmp/photo.jpg
+          xcrun simctl addmedia "$UDID" /tmp/photo.jpg
           cd iosApp
           xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
-            -destination "platform=iOS Simulator,name=$DEVICE" \
+            -destination "id=$UDID" \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO -only-testing:iosAppUITests
       - uses: actions/upload-artifact@v4
