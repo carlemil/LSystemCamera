@@ -77,3 +77,12 @@ multiplatform plugin, then 9.2.1 (Markera).
 ## Status
 
 Tasks 1-3 done (2026-09-10). Tasks 1-2 verified on the Pixel 9 emulator (live, freeze, front camera, share, rationale, re-grant); task 3 verified by compile + link of the iosSimulatorArm64 framework on the Mac mini (clone at `~/source/LSystemCamera`, sync uncommitted work with `tar -cf - shared ... | ssh macmini "cd ~/source/LSystemCamera && tar -xf -"`, then `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64` with `JAVA_HOME=$(/usr/libexec/java_home)`). All tasks done (2026-09-10). `iosApp/` builds, launches and renders in the simulator, driven by the UI test; CLAUDE.md, README.md and iosApp/README.md describe the KMP layout. `NSPhotoLibraryUsageDescription` was dropped from Info.plist (PHPicker needs no permission) so PRIVACY.md stays true. Remaining follow-ups are listed above; the real-camera path needs an iPhone.
+
+TestFlight prep (2026-09-11): `:shared:linkReleaseFrameworkIosArm64` and an unsigned
+`xcodebuild -configuration Release -sdk iphoneos` build both pass on the Mac mini. The Mac
+has `iosApp/fastlane/.env` and `Configuration/Signing.xcconfig` copied from
+FieldShootingTimer (same team, same ASC key) and two valid Apple Distribution identities.
+App Store Connect has no app record and no bundle id for `se.kjellstrand.lsystemcamera`
+yet, so `fastlane beta` stops at `get_provisioning_profile` until one is created
+(`fastlane produce` or the ASC web UI). Over non-login ssh, fastlane needs
+`PATH=/opt/homebrew/bin:$PATH`.

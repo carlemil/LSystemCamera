@@ -1,7 +1,1 @@
-New look: pick a curve from an icon strip, then adjust contrast, brightness or complexity with one big slider.
-Shutter button holds the frame so you can share exactly what you see; tap resume to go live again.
-Switch between back and front camera.
-Three new curves: Fass Three, Fass Four and Terdragon.
-Every curve now has its own icon.
-Line widths and default complexity retuned for every curve so strokes never merge.
-Less than half the download size.
+First release on iOS. Point the camera at anything and watch it redrawn as a single space-filling fractal line: pick one of 18 curves, adjust contrast, brightness or complexity, hold the frame with the shutter and share it as a PNG.
